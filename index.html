@@ -6,78 +6,116 @@
     <title>มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* CSS สำหรับ Glassmorphism และ Background */
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+        
         body {
+            font-family: 'Sarabun', sans-serif;
             background-image: url('https://img2.pic.in.th/Untitled-designbdebf65cb43b24c0.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            font-family: 'Sarabun', sans-serif;
         }
+
+        /* Glassmorphism Effect */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
             border-radius: 1.5rem;
         }
+
         .glow-logo {
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
-            animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+            animation: glow 2s infinite alternate;
         }
-        @keyframes pulse {
-            0% { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6)); }
-            50% { filter: drop-shadow(0 0 25px rgba(255, 255, 255, 1)); }
-            100% { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6)); }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6)); }
+            to { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1)); }
         }
-        /* ซ่อนหน้าต่างตอนเริ่มต้น */
+
         .hidden-page { display: none !important; }
+        
+        /* สไตล์สำหรับ Print */
+        @media print {
+            @page { size: landscape; margin: 10mm; }
+            body { background: white; }
+            .no-print { display: none !important; }
+            .glass-panel { background: none; border: none; box-shadow: none; filter: none; }
+            .print-table { width: 100%; border-collapse: collapse; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; }
+        }
+
+        /* Scrollbar ซ่อนให้ดูเรียบหรู */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.5); border-radius: 10px; }
     </style>
 </head>
 <body class="min-h-screen text-gray-800 flex flex-col justify-between">
 
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
+    </div>
+
     <div id="login-section" class="flex-grow flex items-center justify-center">
-        <div class="glass-panel p-8 w-96 flex flex-col items-center relative transition-all duration-300">
+        <div class="glass-panel p-10 w-full max-w-sm flex flex-col items-center">
             <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-32 mb-6 glow-logo" alt="Logo">
-            <h2 class="text-2xl font-bold mb-4 text-white drop-shadow-md">เข้าสู่ระบบ</h2>
-            <input type="password" id="login-id" maxlength="6" placeholder="รหัสผ่าน 6 หลัก" 
-                   class="w-full p-3 mb-4 rounded-xl border-none outline-none text-center text-xl bg-white bg-opacity-70 focus:bg-opacity-100 transition-all">
+            <h2 class="text-2xl font-bold mb-6 text-white drop-shadow-md tracking-wide">เข้าสู่ระบบ</h2>
+            
+            <input type="password" id="login-id" maxlength="6" inputmode="numeric" placeholder="รหัสผ่าน 6 หลัก" 
+                   class="w-full p-4 mb-4 rounded-xl border border-white/50 outline-none text-center text-2xl tracking-widest bg-white/60 focus:bg-white/90 transition shadow-inner">
+            
             <button onclick="handleLogin()" id="btn-login"
-                    class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition-colors duration-300 shadow-lg">
+                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-500 hover:to-blue-300 text-white rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                 ตกลง
             </button>
-            <p id="cooldown-timer" class="text-red-200 mt-3 hidden text-sm font-bold"></p>
+            <p id="cooldown-timer" class="text-red-300 mt-4 hidden text-sm font-bold bg-red-900/50 px-4 py-2 rounded-lg"></p>
         </div>
     </div>
 
     <div id="main-app" class="hidden-page flex-grow flex flex-col h-screen">
-        <header class="glass-panel m-4 p-4 flex justify-between items-center z-10">
+        
+        <header class="glass-panel mx-4 mt-4 p-4 flex justify-between items-center z-10 no-print">
             <div class="flex items-center gap-4">
                 <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-12 glow-logo" alt="Logo">
                 <div>
-                    <h1 class="font-bold text-lg text-white drop-shadow">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</h1>
-                    <p class="text-sm text-gray-200">โรงพยาบาลสะเดา - <span id="current-menu-title">หน้าหลัก</span></p>
+                    <h1 class="font-bold text-lg text-white drop-shadow-md">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</h1>
+                    <p class="text-sm text-blue-100"><i class="fas fa-hospital"></i> รพ.สะเดา | <span id="current-menu-title" class="font-semibold text-yellow-300">หน้าหลัก</span></p>
                 </div>
             </div>
             <div class="text-right text-white">
-                <p class="font-bold" id="user-name">ชื่อ-สกุล</p>
-                <p class="text-sm bg-blue-500 px-2 rounded-full inline-block mt-1" id="user-role">Role</p>
+                <p class="font-bold text-lg drop-shadow" id="user-name">ชื่อ-สกุล</p>
+                <span class="text-xs bg-white text-blue-800 px-3 py-1 rounded-full font-bold shadow" id="user-role">Role</span>
             </div>
         </header>
 
         <main class="flex-grow overflow-y-auto p-4 z-10" id="content-area">
             </main>
 
-        <nav class="glass-panel mx-4 mb-2 p-2 flex justify-around items-center text-white z-10">
-            <button class="nav-btn hover:text-blue-300 flex flex-col items-center" onclick="navigate('home')">หน้าหลัก</button>
-            <button class="nav-btn hover:text-blue-300 flex flex-col items-center" onclick="navigate('works')">ผลงาน</button>
-            <button class="nav-btn hover:text-blue-300 flex flex-col items-center" onclick="navigate('scoring')">ให้คะแนน</button>
-            <button class="nav-btn hover:text-blue-300 flex flex-col items-center" onclick="navigate('summary')">สรุปผล</button>
+        <nav class="glass-panel mx-4 mb-2 p-3 flex justify-around items-center text-white z-10 no-print">
+            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('home')">
+                <i class="fas fa-home text-xl mb-1"></i><span class="text-xs">หน้าหลัก</span>
+            </button>
+            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('works')">
+                <i class="fas fa-list-alt text-xl mb-1"></i><span class="text-xs">ผลงาน</span>
+            </button>
+            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('scoring')">
+                <i class="fas fa-star text-xl mb-1"></i><span class="text-xs">ให้คะแนน</span>
+            </button>
+            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('summary')">
+                <i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-xs">สรุปผล</span>
+            </button>
+            <button class="flex flex-col items-center text-red-300 hover:text-red-100 transition" onclick="logout()">
+                <i class="fas fa-sign-out-alt text-xl mb-1"></i><span class="text-xs">ออก</span>
+            </button>
         </nav>
         
-        <footer class="text-center text-white text-xs py-1 opacity-70 z-10 backdrop-blur-sm">
+        <footer class="text-center text-white text-xs py-2 opacity-80 z-10 no-print drop-shadow-md">
             พัฒนาโดย นายทศพร คงสุขนิรันดร์ ตำแหน่งแพทย์แผนไทย
         </footer>
     </div>
