@@ -12,95 +12,107 @@
         
         body {
             font-family: 'Sarabun', sans-serif;
-            /* เปลี่ยนพื้นหลังเป็น CSS Gradient โทนโรงพยาบาล/วิชาการ เรียบหรูและโหลดไว */
-            background: linear-gradient(135deg, #0f2027, #203a43, #2ca1bd);
-            background-attachment: fixed;
+            background-color: #f4f7f9; /* สีเทาอมฟ้าอ่อนๆ สบายตา */
             color: #333;
+            overflow-x: hidden;
         }
 
+        /* สร้าง Background Curve ด้วย CSS เพียว โหลดเร็วและสมูท */
+        .bg-curve {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 40vh;
+            background: #ffffff;
+            border-bottom-left-radius: 50% 10vh;
+            border-bottom-right-radius: 50% 10vh;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            z-index: -1;
+        }
+
+        /* ปรับ Glassmorphism สำหรับธีมสว่าง */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.08);
             border-radius: 1.5rem;
         }
 
-        .glow-logo {
-            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
-            animation: glow 2.5s infinite alternate;
-        }
-
-        @keyframes glow {
-            from { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5)); }
-            to { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1)); }
+        /* ปรับเงาโลโก้ให้เข้ากับพื้นหลังสว่าง */
+        .logo-shadow {
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
         }
 
         .hidden-page { display: none !important; }
         
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
+    <div class="bg-curve"></div>
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
     </div>
 
     <div id="login-section" class="flex-grow flex items-center justify-center p-4">
         <div class="glass-panel p-10 w-full max-w-md flex flex-col items-center">
-            <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-32 mb-6 glow-logo" alt="Logo">
-            <h2 class="text-2xl font-bold mb-6 text-white drop-shadow-md tracking-wide">เข้าสู่ระบบ</h2>
+            <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-32 mb-6 logo-shadow" alt="Logo">
+            <h2 class="text-2xl font-bold mb-6 text-blue-900 tracking-wide">เข้าสู่ระบบ</h2>
             
             <input type="password" id="login-id" maxlength="6" inputmode="numeric" placeholder="รหัสผู้ใช้งาน 6 หลัก" 
-                   class="w-full p-4 mb-4 rounded-xl border border-white/50 outline-none text-center text-2xl tracking-widest bg-white/70 focus:bg-white/95 transition shadow-inner">
+                   class="w-full p-4 mb-4 rounded-xl border-2 border-gray-200 outline-none text-center text-2xl tracking-widest bg-gray-50 focus:bg-white focus:border-blue-400 transition shadow-inner text-blue-900 font-bold">
             
             <button onclick="handleLogin()" id="btn-login"
-                    class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                 ตกลง
             </button>
-            <p id="cooldown-timer" class="text-red-200 mt-4 hidden text-sm font-bold bg-red-900/60 px-4 py-2 rounded-lg"></p>
+            <p id="cooldown-timer" class="text-red-600 mt-4 hidden text-sm font-bold bg-red-100 px-4 py-2 rounded-lg border border-red-200"></p>
         </div>
     </div>
 
     <div id="main-app" class="hidden-page flex-grow flex flex-col h-screen">
+        
         <header class="glass-panel mx-4 mt-4 p-4 flex justify-between items-center z-10">
             <div class="flex items-center gap-4">
-                <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-12 glow-logo" alt="Logo">
+                <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-10 md:w-12 logo-shadow" alt="Logo">
                 <div>
-                    <h1 class="font-bold text-lg text-white drop-shadow-md truncate w-48 md:w-auto">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</h1>
-                    <p class="text-sm text-cyan-100"><i class="fas fa-hospital"></i> รพ.สะเดา | <span id="current-menu-title" class="font-semibold text-yellow-300">หน้าหลัก</span></p>
+                    <h1 class="font-bold text-base md:text-lg text-blue-900 truncate w-48 md:w-auto">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา</h1>
+                    <p class="text-sm text-gray-500"><i class="fas fa-hospital text-blue-400"></i> รพ.สะเดา | <span id="current-menu-title" class="font-semibold text-blue-600">หน้าหลัก</span></p>
                 </div>
             </div>
-            <div class="text-right text-white">
-                <p class="font-bold text-sm md:text-lg drop-shadow truncate w-24 md:w-auto" id="user-name">ชื่อ-สกุล</p>
-                <span class="text-xs bg-white text-blue-900 px-3 py-1 rounded-full font-bold shadow" id="user-role">Role</span>
+            <div class="text-right">
+                <p class="font-bold text-sm md:text-base text-gray-800 truncate w-24 md:w-auto" id="user-name">ชื่อ-สกุล</p>
+                <span class="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold shadow-sm" id="user-role">Role</span>
             </div>
         </header>
 
         <main class="flex-grow overflow-y-auto p-4 z-10" id="content-area"></main>
 
-        <nav class="glass-panel mx-4 mb-2 p-3 flex justify-around items-center text-white z-10">
-            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('home')">
-                <i class="fas fa-home text-xl mb-1"></i><span class="text-xs">หน้าหลัก</span>
+        <nav class="glass-panel mx-4 mb-2 p-3 flex justify-around items-center text-gray-500 z-10">
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('home')">
+                <i class="fas fa-home text-xl mb-1"></i><span class="text-xs font-semibold">หน้าหลัก</span>
             </button>
-            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('works')">
-                <i class="fas fa-list-alt text-xl mb-1"></i><span class="text-xs">ผลงาน</span>
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('works')">
+                <i class="fas fa-list-alt text-xl mb-1"></i><span class="text-xs font-semibold">ผลงาน</span>
             </button>
-            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('scoring')">
-                <i class="fas fa-star text-xl mb-1"></i><span class="text-xs">ให้คะแนน</span>
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('scoring')">
+                <i class="fas fa-star text-xl mb-1"></i><span class="text-xs font-semibold">ให้คะแนน</span>
             </button>
-            <button class="flex flex-col items-center hover:text-yellow-300 transition" onclick="navigate('summary')">
-                <i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-xs">สรุปผล</span>
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('summary')">
+                <i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-xs font-semibold">สรุปผล</span>
             </button>
-            <button class="flex flex-col items-center text-red-300 hover:text-red-100 transition" onclick="logout()">
-                <i class="fas fa-sign-out-alt text-xl mb-1"></i><span class="text-xs">ออก</span>
+            <button class="flex flex-col items-center text-red-400 hover:text-red-600 transition" onclick="logout()">
+                <i class="fas fa-sign-out-alt text-xl mb-1"></i><span class="text-xs font-semibold">ออก</span>
             </button>
         </nav>
         
-        <footer class="text-center text-white text-xs py-2 opacity-80 z-10 drop-shadow-md">
+        <footer class="text-center text-gray-400 text-xs py-2 z-10 drop-shadow-sm">
             พัฒนาโดย นายทศพร คงสุขนิรันดร์ ตำแหน่งแพทย์แผนไทย
         </footer>
     </div>
@@ -111,7 +123,6 @@
         let isCooldown = false;
         let currentUser = null;
 
-        // ฐานข้อมูลเกณฑ์การให้คะแนน ครบ 10 ประเภท
         const criteriaConfig = {
             "Oral Presentation : วิจัย": [
                 { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (80 คะแนน)", items: [
@@ -291,7 +302,7 @@
 
             showLoading(true);
             try {
-                // รอการเชื่อม API จริง ช่วงนี้จำลอง Login ให้เข้าได้ทุกรหัส 6 หลักเพื่อการทดสอบ UI
+                // จำลองการเชื่อม API (ให้เข้าได้ทุกรหัส 6 หลักเพื่อทดสอบ)
                 setTimeout(() => {
                     currentUser = { id: inputId, name: "คณะกรรมการ", role: "Judge", group: "1" };
                     
@@ -362,16 +373,16 @@
             
             if (page === 'home') {
                 contentArea.innerHTML = `
-                    <div class="glass-panel p-8 text-center bg-white/40">
+                    <div class="glass-panel p-8 text-center">
                         <h2 class="text-2xl font-bold mb-4 text-blue-900">ยินดีต้อนรับสู่ระบบประเมินผลงาน</h2>
-                        <p class="text-gray-800 mb-6">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</p>
+                        <p class="text-gray-600 mb-6">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</p>
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-blue-100/80 p-4 rounded-xl shadow border border-blue-200">
-                                <h3 class="font-bold text-blue-900">สถานะ</h3>
+                            <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-100">
+                                <h3 class="font-bold text-blue-800">สถานะ</h3>
                                 <p class="text-xl font-bold mt-2 text-blue-600">พร้อมใช้งาน</p>
                             </div>
-                            <div class="bg-green-100/80 p-4 rounded-xl shadow border border-green-200" onclick="renderCategorySelect()" style="cursor:pointer;">
-                                <h3 class="font-bold text-green-900">ทดสอบฟอร์ม</h3>
+                            <div class="bg-green-50 p-4 rounded-xl shadow-sm border border-green-100" onclick="renderCategorySelect()" style="cursor:pointer;">
+                                <h3 class="font-bold text-green-800">ทดสอบฟอร์ม</h3>
                                 <p class="text-sm font-bold mt-2 text-green-600">คลิกที่นี่ <i class="fas fa-hand-pointer"></i></p>
                             </div>
                         </div>
@@ -380,11 +391,10 @@
             } else if (page === 'scoring') {
                 renderCategorySelect();
             } else {
-                contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-white"><p>กำลังพัฒนาระบบดึงข้อมูลจาก Database...</p></div>`;
+                contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500"><p><i class="fas fa-tools text-3xl mb-3"></i><br>กำลังพัฒนาระบบดึงข้อมูลจาก Database...</p></div>`;
             }
         }
 
-        // หน้าจำลองการเลือกประเภทเพื่อทดสอบฟอร์มให้คะแนน 10 รูปแบบ
         function renderCategorySelect() {
             document.getElementById('current-menu-title').innerText = "เลือกประเภทผลงาน";
             let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-20">`;
@@ -392,9 +402,9 @@
             Object.keys(criteriaConfig).forEach(cat => {
                 html += `
                     <button onclick="openScoringForm('W001', '${cat}', 'ผลงานทดสอบระบบ (${cat})')" 
-                            class="glass-panel p-4 text-left hover:bg-white/40 transition active:scale-95 border-l-4 border-blue-500">
+                            class="glass-panel p-4 text-left hover:bg-blue-50 transition active:scale-95 border-l-4 border-blue-500 text-gray-800">
                         <p class="font-bold text-blue-900 truncate">${cat}</p>
-                        <p class="text-xs text-gray-700 mt-1">คลิกเพื่อเปิดฟอร์มให้คะแนน</p>
+                        <p class="text-xs text-gray-500 mt-1">คลิกเพื่อเปิดฟอร์มให้คะแนน</p>
                     </button>
                 `;
             });
@@ -407,27 +417,27 @@
             const criteria = criteriaConfig[category];
             
             let html = `
-                <div class="glass-panel p-4 md:p-6 bg-white/95 pb-32">
-                    <div class="border-b-2 border-cyan-500 pb-3 mb-4">
+                <div class="glass-panel p-4 md:p-6 pb-36">
+                    <div class="border-b-2 border-blue-200 pb-3 mb-4">
                         <h2 class="text-lg md:text-xl font-bold text-blue-900">${title}</h2>
-                        <p class="text-sm font-semibold text-gray-600 bg-gray-100 inline-block px-2 py-1 rounded mt-1">${category}</p>
+                        <p class="text-sm font-semibold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full mt-2 border border-blue-100">${category}</p>
                     </div>
                     <form id="score-form" onsubmit="submitScore(event, '${workId}', '${category}')">
             `;
 
             criteria.forEach(sec => {
-                html += `<div class="bg-blue-50/50 p-3 md:p-4 rounded-xl mb-4 shadow-sm border border-blue-100">
+                html += `<div class="bg-gray-50/80 p-3 md:p-4 rounded-xl mb-4 shadow-sm border border-gray-100">
                             <h3 class="font-bold text-blue-800 mb-4 text-sm md:text-base border-l-4 border-blue-500 pl-2">${sec.section}</h3>`;
                 
                 sec.items.forEach(item => {
                     html += `
-                        <div class="mb-5 bg-white p-3 md:p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <label class="block text-sm md:text-base font-bold mb-3 text-gray-700">${item.text} <span class="text-blue-500">(เต็ม ${item.max})</span></label>
+                        <div class="mb-5 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <label class="block text-sm md:text-base font-bold mb-3 text-gray-700">${item.text} <span class="text-blue-500 font-normal">(เต็ม ${item.max})</span></label>
                             <div class="flex items-center gap-4">
                                 <input type="range" id="${item.id}" min="0" max="${item.max}" value="0" required
-                                       class="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                       class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                        oninput="document.getElementById('val_${item.id}').innerText = this.value; calculateTotal();">
-                                <span id="val_${item.id}" class="text-2xl font-bold text-white w-14 text-center bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg py-1 shadow-md">0</span>
+                                <span id="val_${item.id}" class="text-2xl font-bold text-blue-700 w-14 text-center bg-blue-50 rounded-lg py-1 shadow-inner border border-blue-100">0</span>
                             </div>
                         </div>
                     `;
@@ -436,19 +446,19 @@
             });
 
             html += `
-                    <div class="flex items-center justify-between bg-red-50 p-4 rounded-xl border border-red-200 mb-4 shadow-sm">
-                        <label class="font-bold text-red-600"><i class="fas fa-minus-circle"></i> คะแนนหักลบ</label>
-                        <input type="number" id="deduct_score" min="0" max="100" value="0" class="w-24 p-2 text-center rounded-lg border-2 border-red-300 font-bold text-red-600 text-lg outline-none focus:border-red-500 transition" oninput="calculateTotal()">
+                    <div class="flex items-center justify-between bg-red-50 p-4 rounded-xl border border-red-100 mb-4 shadow-sm">
+                        <label class="font-bold text-red-600"><i class="fas fa-minus-circle mr-1"></i> คะแนนหักลบ</label>
+                        <input type="number" id="deduct_score" min="0" max="100" value="0" class="w-24 p-2 text-center rounded-lg border border-red-200 font-bold text-red-600 text-lg outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition bg-white" oninput="calculateTotal()">
                     </div>
                     
-                    <div class="fixed bottom-0 left-0 right-0 p-4 z-50 bg-gradient-to-t from-gray-900 to-transparent">
-                        <div class="bg-gradient-to-r from-blue-900 to-cyan-800 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center border border-blue-400/50 max-w-4xl mx-auto">
+                    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+                        <div class="p-4 max-w-4xl mx-auto flex justify-between items-center">
                             <div>
-                                <p class="text-xs text-cyan-200 mb-1">รวมคะแนนทั้งหมด</p>
-                                <p class="text-3xl md:text-4xl font-bold drop-shadow"><span id="total_score_display">0</span> <span class="text-sm font-normal text-cyan-100">/ 100</span></p>
+                                <p class="text-xs text-gray-500 mb-1 font-semibold">รวมคะแนนทั้งหมด</p>
+                                <p class="text-3xl md:text-4xl font-bold text-blue-900"><span id="total_score_display">0</span> <span class="text-sm font-normal text-gray-400">/ 100</span></p>
                             </div>
-                            <button type="submit" class="bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 text-white font-bold py-3 px-6 md:px-8 rounded-xl shadow-lg transition transform hover:scale-105 active:scale-95 border border-green-300/50">
-                                <i class="fas fa-paper-plane mr-2"></i> บันทึก
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1">
+                                <i class="fas fa-check-circle mr-2"></i> บันทึกผล
                             </button>
                         </div>
                     </div>
@@ -478,17 +488,16 @@
 
             Swal.fire({
                 title: 'ยืนยันการส่งคะแนน?',
-                html: `คะแนนรวม: <b>${total}</b> / 100`,
+                html: `คะแนนรวม: <b><span class="text-2xl text-blue-600">${total}</span></b> / 100`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'ใช่, ส่งคะแนน!',
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#f87171',
+                confirmButtonText: 'ยืนยัน',
                 cancelButtonText: 'ยกเลิก'
             }).then((result) => {
                 if (result.isConfirmed) {
                     showLoading(true);
-                    // จำลองการส่งข้อมูลสำเร็จ
                     setTimeout(() => {
                         showLoading(false);
                         Swal.fire('สำเร็จ!', 'บันทึกคะแนนเรียบร้อยแล้ว', 'success');
@@ -503,7 +512,7 @@
                 title: 'ออกจากระบบ?',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
+                confirmButtonColor: '#ef4444',
                 confirmButtonText: 'ออกจากระบบ',
                 cancelButtonText: 'ยกเลิก'
             }).then((result) => {
