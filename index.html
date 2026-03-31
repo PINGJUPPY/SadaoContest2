@@ -6,6 +6,7 @@
     <title>มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
@@ -39,14 +40,13 @@
             border-radius: 1.5rem;
         }
 
-        .logo-shadow {
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-        }
-
+        .logo-shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
         .hidden-page { display: none !important; }
-        
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
+        
+        /* สไตล์สำหรับตอนกำลังลาก Card */
+        .sortable-ghost { opacity: 0.4; background-color: #eff6ff; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -74,7 +74,6 @@
     </div>
 
     <div id="main-app" class="hidden-page flex-grow flex flex-col h-screen">
-        
         <header class="glass-panel mx-4 mt-4 p-4 flex justify-between items-center z-10">
             <div class="flex items-center gap-4">
                 <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-10 md:w-12 logo-shadow" alt="Logo">
@@ -89,7 +88,7 @@
             </div>
         </header>
 
-        <main class="flex-grow overflow-y-auto p-4 z-10" id="content-area"></main>
+        <main class="flex-grow overflow-y-auto p-4 z-10 relative" id="content-area"></main>
 
         <nav class="glass-panel mx-4 mb-2 p-3 flex justify-around items-center text-gray-500 z-10">
             <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('home')">
@@ -119,6 +118,7 @@
         let loginAttempts = 0;
         let isCooldown = false;
         let currentUser = null;
+        let worksData = []; // เก็บข้อมูลผลงานจาก Database
 
         const criteriaConfig = {
             "Oral Presentation : วิจัย": [
@@ -283,29 +283,20 @@
             ]
         };
 
-        function showLoading(show) {
-            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
-        }
+        function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
 
         async function handleLogin() {
             if (isCooldown) return;
             const inputId = document.getElementById('login-id').value;
-            
-            if(inputId.length !== 6) {
-                Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณากรอกรหัส 6 หลัก' });
-                return;
-            }
+            if(inputId.length !== 6) { Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณากรอกรหัส 6 หลัก' }); return; }
 
             showLoading(true);
             try {
+                // จำลอง Login (เพื่อความรวดเร็วในการทดสอบ)
                 setTimeout(() => {
                     currentUser = { id: inputId, name: "คณะกรรมการ", role: "Judge", group: "1" };
                     Swal.fire({
-                        title: 'เข้าสู่ระบบสำเร็จ!',
-                        text: `ยินดีต้อนรับ ${currentUser.name}`,
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
+                        title: 'เข้าสู่ระบบสำเร็จ!', text: `ยินดีต้อนรับ ${currentUser.name}`, icon: 'success', timer: 1500, showConfirmButton: false
                     }).then(() => {
                         document.getElementById('login-section').classList.add('hidden-page');
                         document.getElementById('main-app').classList.remove('hidden-page');
@@ -323,39 +314,23 @@
 
         function handleLoginFail() {
             loginAttempts++;
-            if(loginAttempts >= 3) {
-                startCooldown();
-            } else {
-                Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
-            }
+            if(loginAttempts >= 3) startCooldown();
+            else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
         function startCooldown() {
-            isCooldown = true;
-            let timeLeft = 90;
+            isCooldown = true; let timeLeft = 90;
             const timerDisplay = document.getElementById('cooldown-timer');
-            const inputField = document.getElementById('login-id');
-            const btn = document.getElementById('btn-login');
+            const inputField = document.getElementById('login-id'); const btn = document.getElementById('btn-login');
             
-            timerDisplay.classList.remove('hidden');
-            inputField.disabled = true;
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-
+            timerDisplay.classList.remove('hidden'); inputField.disabled = true; btn.disabled = true; btn.classList.add('opacity-50');
             Swal.fire('ระบบระงับชั่วคราว', 'กรอกผิดเกิน 3 ครั้ง กรุณารอ 90 วินาที', 'warning');
 
             const countdown = setInterval(() => {
-                timerDisplay.innerText = `คูลดาวน์: ${timeLeft} วินาที`;
-                timeLeft--;
+                timerDisplay.innerText = `คูลดาวน์: ${timeLeft} วินาที`; timeLeft--;
                 if (timeLeft < 0) {
-                    clearInterval(countdown);
-                    isCooldown = false;
-                    loginAttempts = 0;
-                    timerDisplay.classList.add('hidden');
-                    inputField.disabled = false;
-                    inputField.value = '';
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50');
+                    clearInterval(countdown); isCooldown = false; loginAttempts = 0;
+                    timerDisplay.classList.add('hidden'); inputField.disabled = false; inputField.value = ''; btn.disabled = false; btn.classList.remove('opacity-50');
                 }
             }, 1000);
         }
@@ -372,49 +347,163 @@
                         <p class="text-gray-600 mb-6">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</p>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-100">
-                                <h3 class="font-bold text-blue-800">สถานะ</h3>
-                                <p class="text-xl font-bold mt-2 text-blue-600">พร้อมใช้งาน</p>
+                                <h3 class="font-bold text-blue-800">ห้องพรีเซนต์</h3>
+                                <p class="text-xl font-bold mt-2 text-blue-600">3 ห้อง</p>
                             </div>
-                            <div class="bg-green-50 p-4 rounded-xl shadow-sm border border-green-100" onclick="renderCategorySelect()" style="cursor:pointer;">
-                                <h3 class="font-bold text-green-800">ทดสอบฟอร์ม</h3>
-                                <p class="text-sm font-bold mt-2 text-green-600">คลิกที่นี่ <i class="fas fa-hand-pointer"></i></p>
+                            <div class="bg-green-50 p-4 rounded-xl shadow-sm border border-green-100" onclick="navigate('works')" style="cursor:pointer;">
+                                <h3 class="font-bold text-green-800">ผลงานทั้งหมด</h3>
+                                <p class="text-sm font-bold mt-2 text-green-600">คลิกดูรายชื่อ <i class="fas fa-arrow-right"></i></p>
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
+            } else if (page === 'works') {
+                fetchWorksAndRender();
             } else if (page === 'scoring') {
                 renderCategorySelect();
             } else {
-                contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500"><p><i class="fas fa-tools text-3xl mb-3"></i><br>กำลังพัฒนาระบบดึงข้อมูลจาก Database...</p></div>`;
+                contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500"><p><i class="fas fa-tools text-3xl mb-3"></i><br>กำลังพัฒนาระบบสรุปผล...</p></div>`;
             }
         }
 
+        // ================= ระบบดึงข้อมูลและ Drag & Drop =================
+        async function fetchWorksAndRender() {
+            showLoading(true);
+            try {
+                const response = await fetch(`${API_URL}?action=getWorks`);
+                const result = await response.json();
+                
+                if (result.success && result.data.length > 0) {
+                    worksData = result.data;
+                } else {
+                    throw new Error("No data");
+                }
+            } catch (error) {
+                console.log("Using mock data");
+                // Mock Data (ข้อมูลจำลองเวลาดึงไม่สำเร็จ) สังเกตว่าชื่อ category ต้องตรงเป๊ะ
+                worksData = [
+                    { id: "W001", title: "การลดเวลารอคอยรับยา", presenter: "นาย สมชาย ใจดี", position: "เภสัชกร", category: "Oral Presentation : CQI Clinic", level: "โรงพยาบาลสะเดา", sequence: 1, group: 1 },
+                    { id: "W002", title: "ปรับปรุงระบบคิวเจาะเลือด", presenter: "นาย สมศักดิ์ เก่งมาก", position: "นักเทคนิคการแพทย์", category: "Oral Presentation : CQI Clinic", level: "โรงพยาบาลปาดังเบซาร์", sequence: 2, group: 1 },
+                    { id: "W003", title: "นวัตกรรมเตียงพลิกตัวลดแผลกดทับ", presenter: "นาง สมหญิง รักงาน", position: "พยาบาลวิชาชีพ", category: "ผลงานประเภทนวัตกรรม Poster", level: "รพ.สต. ปาดัง", sequence: 1, group: 2 }
+                ];
+            } finally {
+                showLoading(false);
+                renderWorksList();
+            }
+        }
+
+        function renderWorksList() {
+            const contentArea = document.getElementById('content-area');
+            const groupedWorks = worksData.reduce((acc, work) => {
+                if (!acc[work.category]) acc[work.category] = [];
+                acc[work.category].push(work);
+                return acc;
+            }, {});
+
+            let html = `<div class="pb-24">`; 
+
+            for (const [category, works] of Object.entries(groupedWorks)) {
+                works.sort((a, b) => a.sequence - b.sequence);
+                
+                html += `
+                    <div class="mb-6">
+                        <div class="bg-blue-900 text-white px-4 py-2 rounded-t-xl font-bold text-sm shadow-md flex justify-between items-center">
+                            <span>${category}</span>
+                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs">${works.length} ผลงาน</span>
+                        </div>
+                        <div class="glass-panel rounded-t-none p-3 works-container min-h-[50px]" data-category="${category}">
+                `;
+                
+                works.forEach(work => {
+                    html += `
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-3 work-card relative overflow-hidden group cursor-grab active:cursor-grabbing" data-id="${work.id}">
+                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-300 group-hover:bg-blue-500 transition"></div>
+                            <div class="drag-handle text-gray-300 hover:text-blue-500 pl-1 py-2">
+                                <i class="fas fa-grip-vertical text-lg"></i>
+                            </div>
+                            <div class="flex-grow pl-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-2">${work.title}</h3>
+                                    <span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg border border-blue-100 shrink-0">${work.sequence}</span>
+                                </div>
+                                <p class="text-xs text-gray-600 mt-2"><i class="fas fa-user-circle text-gray-400"></i> ${work.presenter}</p>
+                                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-map-marker-alt text-red-300"></i> ${work.level}</p>
+                            </div>
+                            <button onclick="openScoringForm('${work.id}', '${work.category}', '${work.title}')" class="shrink-0 bg-green-50 hover:bg-green-500 hover:text-white text-green-600 border border-green-200 w-10 h-10 rounded-xl transition shadow-sm flex items-center justify-center tooltip">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            }
+            html += `</div>`;
+            contentArea.innerHTML = html;
+
+            // เปิดใช้งาน SortableJS (Drag & Drop)
+            const containers = document.querySelectorAll('.works-container');
+            containers.forEach(container => {
+                new Sortable(container, {
+                    handle: '.drag-handle',
+                    animation: 250,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function (evt) { updateSequenceAfterDrag(evt.to, container.dataset.category); }
+                });
+            });
+        }
+
+        async function updateSequenceAfterDrag(containerEl, category) {
+            const cards = containerEl.querySelectorAll('.work-card');
+            const updates = [];
+            
+            cards.forEach((card, index) => {
+                const newSeq = index + 1;
+                card.querySelector('.seq-badge').innerText = newSeq; 
+                updates.push({ id: card.dataset.id, seq: newSeq });
+                const workIndex = worksData.findIndex(w => w.id === card.dataset.id);
+                if(workIndex !== -1) worksData[workIndex].sequence = newSeq;
+            });
+
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+            Toast.fire({ icon: 'info', title: 'กำลังบันทึกลำดับคิว...' });
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "updateSequence", updates: updates })
+                });
+                const result = await response.json();
+                if(result.success) Toast.fire({ icon: 'success', title: 'อัปเดตคิวสำเร็จ' });
+            } catch (err) {
+                Toast.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ' });
+            }
+        }
+
+        // ================= ระบบให้คะแนน =================
         function renderCategorySelect() {
             document.getElementById('current-menu-title').innerText = "เลือกประเภทผลงาน";
-            let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-20">`;
-            
+            let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-24">`;
             Object.keys(criteriaConfig).forEach(cat => {
                 html += `
-                    <button onclick="openScoringForm('W001', '${cat}', 'ผลงานทดสอบระบบ (${cat})')" 
+                    <button onclick="openScoringForm('W000', '${cat}', 'ฟอร์มเปล่า (${cat})')" 
                             class="glass-panel p-4 text-left hover:bg-blue-50 transition active:scale-95 border-l-4 border-blue-500 text-gray-800">
                         <p class="font-bold text-blue-900 truncate">${cat}</p>
-                        <p class="text-xs text-gray-500 mt-1">คลิกเพื่อเปิดฟอร์มให้คะแนน</p>
-                    </button>
-                `;
+                        <p class="text-xs text-gray-500 mt-1">คลิกเพื่อเปิดฟอร์ม</p>
+                    </button>`;
             });
             html += `</div>`;
             document.getElementById('content-area').innerHTML = html;
         }
 
         function openScoringForm(workId, category, title) {
-            document.getElementById('current-menu-title').innerText = "กำลังให้คะแนน...";
+            document.getElementById('current-menu-title').innerText = "ให้คะแนน";
             const criteria = criteriaConfig[category];
+            if(!criteria) { Swal.fire('Error', 'ไม่พบเกณฑ์การให้คะแนนประเภทนี้', 'error'); return; }
             
             let html = `
                 <div class="glass-panel p-4 md:p-6 pb-36">
                     <div class="border-b-2 border-blue-200 pb-3 mb-4">
-                        <h2 class="text-lg md:text-xl font-bold text-blue-900">${title}</h2>
-                        <p class="text-sm font-semibold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full mt-2 border border-blue-100">${category}</p>
+                        <h2 class="text-lg md:text-xl font-bold text-blue-900 leading-tight">${title}</h2>
+                        <p class="text-xs font-semibold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full mt-2 border border-blue-100">${category}</p>
                     </div>
                     <form id="score-form" onsubmit="submitScore(event, '${workId}', '${category}')">
             `;
@@ -431,7 +520,7 @@
                                 <input type="range" id="${item.id}" min="0" max="${item.max}" value="0" required
                                        class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                        oninput="document.getElementById('val_${item.id}').innerText = this.value; calculateTotal();">
-                                <span id="val_${item.id}" class="text-2xl font-bold text-blue-700 w-14 text-center bg-blue-50 rounded-lg py-1 shadow-inner border border-blue-100">0</span>
+                                <span id="val_${item.id}" class="text-2xl font-bold text-blue-700 w-14 text-center bg-blue-50 rounded-lg py-1 shadow-inner border border-blue-100 shrink-0">0</span>
                             </div>
                         </div>
                     `;
@@ -441,80 +530,78 @@
 
             html += `
                     <div class="flex items-center justify-between bg-red-50 p-4 rounded-xl border border-red-100 mb-4 shadow-sm">
-                        <label class="font-bold text-red-600"><i class="fas fa-minus-circle mr-1"></i> คะแนนหักลบ</label>
-                        <input type="number" id="deduct_score" min="0" max="100" value="0" class="w-24 p-2 text-center rounded-lg border border-red-200 font-bold text-red-600 text-lg outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition bg-white" oninput="calculateTotal()">
+                        <label class="font-bold text-red-600"><i class="fas fa-minus-circle mr-1"></i> หักลบ</label>
+                        <input type="number" id="deduct_score" min="0" max="100" value="0" class="w-20 p-2 text-center rounded-lg border border-red-200 font-bold text-red-600 text-lg outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition bg-white" oninput="calculateTotal()">
                     </div>
                     
                     <div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
-                        <div class="p-4 max-w-4xl mx-auto flex justify-between items-center">
+                        <div class="p-3 md:p-4 max-w-4xl mx-auto flex justify-between items-center">
                             <div>
-                                <p class="text-xs text-gray-500 mb-1 font-semibold">รวมคะแนนทั้งหมด</p>
+                                <p class="text-xs text-gray-500 mb-0.5 font-semibold">รวมคะแนน</p>
                                 <p class="text-3xl md:text-4xl font-bold text-blue-900"><span id="total_score_display">0</span> <span class="text-sm font-normal text-gray-400">/ 100</span></p>
                             </div>
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1">
-                                <i class="fas fa-check-circle mr-2"></i> บันทึกผล
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 md:px-8 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1">
+                                <i class="fas fa-check-circle mr-1"></i> บันทึกผล
                             </button>
                         </div>
                     </div>
                     </form>
                 </div>
             `;
-            
             document.getElementById('content-area').innerHTML = html;
         }
 
         function calculateTotal() {
             let total = 0;
-            const inputs = document.querySelectorAll('input[type="range"]');
-            inputs.forEach(inp => total += parseInt(inp.value || 0));
-            
+            document.querySelectorAll('input[type="range"]').forEach(inp => total += parseInt(inp.value || 0));
             const deduct = parseInt(document.getElementById('deduct_score').value || 0);
             total -= deduct;
-            if(total < 0) total = 0;
-            
-            document.getElementById('total_score_display').innerText = total;
+            document.getElementById('total_score_display').innerText = total < 0 ? 0 : total;
         }
 
         async function submitScore(e, workId, category) {
             e.preventDefault();
             const deduct = parseInt(document.getElementById('deduct_score').value || 0);
             const total = parseInt(document.getElementById('total_score_display').innerText);
+            let scoreData = {};
+            document.querySelectorAll('input[type="range"]').forEach(inp => scoreData[inp.id] = parseInt(inp.value));
 
             Swal.fire({
-                title: 'ยืนยันการส่งคะแนน?',
-                html: `คะแนนรวม: <b><span class="text-2xl text-blue-600">${total}</span></b> / 100`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#2563eb',
-                cancelButtonColor: '#ef4444',
-                confirmButtonText: 'ยืนยัน',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
+                title: 'ยืนยันการส่งคะแนน?', html: `คะแนนรวม: <b><span class="text-2xl text-blue-600">${total}</span></b> / 100`, icon: 'question',
+                showCancelButton: true, confirmButtonColor: '#2563eb', cancelButtonColor: '#ef4444', confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
                 if (result.isConfirmed) {
                     showLoading(true);
-                    setTimeout(() => {
+                    try {
+                        const payload = {
+                            action: "submitScore", workId: workId, judgeId: currentUser.id, judgeName: currentUser.name,
+                            category: category, scores: scoreData, deduct: deduct, totalScore: total
+                        };
+                        const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                        const resData = await response.json();
+                        
+                        if(resData.success) {
+                            Swal.fire('สำเร็จ!', 'บันทึกคะแนนเรียบร้อยแล้ว', 'success');
+                            navigate('works'); // กลับไปหน้าเลือกผลงาน
+                        } else {
+                            throw new Error("Failed to save");
+                        }
+                    } catch (err) {
+                        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถส่งคะแนนได้ (บันทึกจำลองสำเร็จ)', 'warning');
+                        navigate('works');
+                    } finally {
                         showLoading(false);
-                        Swal.fire('สำเร็จ!', 'บันทึกคะแนนเรียบร้อยแล้ว', 'success');
-                        navigate('scoring');
-                    }, 1000);
+                    }
                 }
             });
         }
 
         function logout() {
             Swal.fire({
-                title: 'ออกจากระบบ?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'ออกจากระบบ',
-                cancelButtonText: 'ยกเลิก'
+                title: 'ออกจากระบบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    currentUser = null;
-                    document.getElementById('main-app').classList.add('hidden-page');
-                    document.getElementById('login-section').classList.remove('hidden-page');
-                    document.getElementById('login-id').value = '';
+                    currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = '';
                 }
             });
         }
