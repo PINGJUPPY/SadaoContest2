@@ -20,7 +20,7 @@
         .scored-neon { border: 2px solid #39ff14 !important; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); }
         .active-queue { border-left: 6px solid #10b981 !important; }
         
-        /* สไตล์เฉพาะสำหรับการพิมพ์ (Print) */
+        /* สไตล์สำหรับการพิมพ์ (Print) */
         @media print {
             @page { size: landscape; margin: 15mm; }
             body { background: white !important; font-size: 11pt; color: black; display: block; height: auto; }
@@ -30,11 +30,11 @@
             .print-container { display: block !important; width: 100%; page-break-after: always; }
             .print-header { text-align: center; font-weight: bold; font-size: 16pt; margin-bottom: 20px; color: black; }
             .print-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 11pt; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 11pt; color: black; }
             .print-table th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
             .text-left { text-align: left !important; }
         }
-        .print-container { display: none; } /* ซ่อนหน้าปริ้นท์ในโหมดปกติ */
+        .print-container { display: none; }
     </style>
 </head>
 <body>
@@ -86,10 +86,13 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwe2cc7c3dfQcVRShpXuP51SFMpk42NozsUYeM8NsRI6Zwkx5h6bYh_r8K3uqglBCZ6QA/exec";
-        let loginAttempts = 0; let isCooldown = false; let currentUser = null;
-        let worksData = []; let scoresData = [];
+        let loginAttempts = 0; 
+        let isCooldown = false; 
+        let currentUser = null;
+        let worksData = []; 
+        let scoresData = [];
 
-        // --- ฐานข้อมูลเกณฑ์การให้คะแนน ครบ 10 ประเภท ---
+        // ฐานข้อมูลเกณฑ์การประเมิน 10 ประเภท
         const criteriaConfig = {
             "Oral Presentation : วิจัย": [
                 { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
@@ -213,123 +216,272 @@
 
         function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
 
-        // ================= 1. Login =================
+        // ================= 1. ระบบ Login =================
         async function handleLogin() {
             if (isCooldown) return;
             const inputId = document.getElementById('login-id').value;
             if(!inputId) { Swal.fire('แจ้งเตือน', 'กรุณากรอกรหัสผู้ใช้งาน', 'warning'); return; }
+
             showLoading(true);
             try {
                 const response = await fetch(`${API_URL}?action=login&id=${inputId}`);
                 const result = await response.json();
+                
                 if (result.success) {
-                    currentUser = result.user; loginAttempts = 0;
+                    currentUser = result.user; 
+                    loginAttempts = 0;
                     Swal.fire({ title: 'เข้าสู่ระบบสำเร็จ!', text: `ยินดีต้อนรับ ${currentUser.name}`, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
                         document.getElementById('login-section').classList.add('hidden-page');
                         document.getElementById('main-app').classList.remove('hidden-page');
                         document.getElementById('user-name').innerText = currentUser.name;
+                        
                         const roleBadge = document.getElementById('user-role');
-                        roleBadge.innerText = currentUser.role === 'Admin' ? 'ผู้ดูแลระบบ' : (currentUser.role === 'Staff' ? 'ทีมงานห้อง ' + currentUser.group : 'กรรมการห้อง ' + currentUser.group);
-                        roleBadge.style.backgroundColor = currentUser.role === 'Admin' ? '#ef4444' : (currentUser.role === 'Staff' ? '#f59e0b' : '#10b981');
+                        let roleText = currentUser.role === 'Admin' ? 'ผู้ดูแลระบบ' : (currentUser.role === 'Staff' ? 'ทีมงานห้อง ' + currentUser.group : 'กรรมการห้อง ' + currentUser.group);
+                        let roleColor = currentUser.role === 'Admin' ? '#ef4444' : (currentUser.role === 'Staff' ? '#f59e0b' : '#10b981');
+                        roleBadge.innerText = roleText; roleBadge.style.backgroundColor = roleColor;
+
                         navigate('home');
                     });
-                } else handleLoginFail();
-            } catch (error) { Swal.fire('ข้อผิดพลาด API', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error'); } finally { showLoading(false); }
+                } else {
+                    handleLoginFail();
+                }
+            } catch (error) {
+                Swal.fire('ข้อผิดพลาด API', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+            } finally {
+                showLoading(false);
+            }
         }
-        function handleLoginFail() { /*...โค้ดคูลดาวน์เดิม...*/ }
+
+        function handleLoginFail() {
+            loginAttempts++;
+            if(loginAttempts >= 3) {
+                isCooldown = true; let timeLeft = 90;
+                document.getElementById('cooldown-timer').classList.remove('hidden'); 
+                document.getElementById('login-id').disabled = true; document.getElementById('btn-login').disabled = true;
+                Swal.fire('ระงับชั่วคราว', 'กรอกผิด 3 ครั้ง กรุณารอ 90 วินาที', 'warning');
+                const cd = setInterval(() => {
+                    document.getElementById('cooldown-timer').innerText = `รอ: ${timeLeft} วิ`; timeLeft--;
+                    if (timeLeft < 0) { clearInterval(cd); isCooldown = false; loginAttempts = 0; document.getElementById('cooldown-timer').classList.add('hidden'); document.getElementById('login-id').disabled = false; document.getElementById('login-id').value = ''; document.getElementById('btn-login').disabled = false; }
+                }, 1000);
+            } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
+        }
 
         // ================= 2. ดึงข้อมูล =================
         async function fetchAllData() {
             showLoading(true);
             try {
-                const [worksRes, scoresRes] = await Promise.all([ fetch(`${API_URL}?action=getWorks`), fetch(`${API_URL}?action=getScores`) ]);
-                const worksResult = await worksRes.json(); const scoresResult = await scoresRes.json();
+                const [worksRes, scoresRes] = await Promise.all([
+                    fetch(`${API_URL}?action=getWorks`),
+                    fetch(`${API_URL}?action=getScores`)
+                ]);
+                const worksResult = await worksRes.json();
+                const scoresResult = await scoresRes.json();
                 if(worksResult.success) worksData = worksResult.data;
                 if(scoresResult.success) scoresData = scoresResult.data;
-            } catch(e) { console.error(e); } finally { showLoading(false); }
+            } catch(e) {
+                console.error(e);
+            } finally {
+                showLoading(false);
+            }
         }
 
         // ================= 3. Navigation =================
         async function navigate(page) {
             const titles = { home: "แดชบอร์ดความคืบหน้า", works: "จัดการผลงาน / ขึ้นคิว", scoring: "รอคิวให้คะแนน", summary: "สรุปผลคะแนน" };
             document.getElementById('current-menu-title').innerText = titles[page];
+            
             await fetchAllData();
+
             if (page === 'home') renderDashboard();
             else if (page === 'works') renderWorksList();
             else if (page === 'scoring') renderScoringList();
             else if (page === 'summary') renderSummary();
         }
 
-        // ================= 4. หน้า Home =================
-        function renderDashboard() { /* โค้ดเรนเดอร์หน้า Dashboard ของเดิม (ละไว้เพื่อประหยัดพื้นที่ แต่ให้ใช้ของที่สมบูรณ์) */
+        // ================= 4. หน้า Home (Dashboard) =================
+        function renderDashboard() {
             let html = `<div class="pb-6"><div class="grid grid-cols-1 gap-4">`;
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             const categories = [...new Set(myWorks.map(w => w.category))];
+
             categories.forEach(cat => {
                 const worksInCat = myWorks.filter(w => w.category === cat);
-                const totalWorks = worksInCat.length; let scoredWorks = 0;
-                worksInCat.forEach(w => { if(scoresData.some(s => s.workId === w.id && s.status === 'submitted')) scoredWorks++; });
+                const totalWorks = worksInCat.length;
+                let scoredWorks = 0;
+                worksInCat.forEach(w => {
+                    const isScored = scoresData.some(s => s.workId === w.id && s.status === 'submitted');
+                    if(isScored) scoredWorks++; 
+                });
+                
                 const percent = totalWorks === 0 ? 0 : Math.round((scoredWorks / totalWorks) * 100);
+
                 html += `
                     <div class="glass-panel p-4">
-                        <div class="flex justify-between items-end mb-2"><h3 class="font-bold text-blue-900">${cat}</h3><span class="text-sm font-bold text-blue-600">${percent}%</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-blue-500 h-2.5 rounded-full" style="width: ${percent}%"></div></div>
+                        <div class="flex justify-between items-end mb-2">
+                            <h3 class="font-bold text-blue-900">${cat}</h3>
+                            <span class="text-sm font-bold text-blue-600">${percent}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-500 h-2.5 rounded-full transition-all" style="width: ${percent}%"></div>
+                        </div>
                         <p class="text-xs text-gray-500 mt-2">ประเมินแล้ว ${scoredWorks} / ${totalWorks} ผลงาน</p>
                     </div>`;
             });
-            html += `</div></div>`; document.getElementById('content-area').innerHTML = html;
+            html += `</div></div>`;
+            document.getElementById('content-area').innerHTML = html;
         }
 
         // ================= 5. หน้า Works =================
-        function renderWorksList() { /* โค้ดเรนเดอร์หน้า Works ของเดิม (ละไว้) */
+        function renderWorksList() {
+            const contentArea = document.getElementById('content-area');
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
-            const groupedWorks = myWorks.reduce((acc, work) => { if (!acc[work.category]) acc[work.category] = []; acc[work.category].push(work); return acc; }, {});
+            const groupedWorks = myWorks.reduce((acc, work) => {
+                if (!acc[work.category]) acc[work.category] = [];
+                acc[work.category].push(work); return acc;
+            }, {});
+
             let html = `<div class="pb-6">`; 
+
             for (const [category, works] of Object.entries(groupedWorks)) {
                 works.sort((a, b) => a.sequence - b.sequence);
                 html += `
                     <div class="mb-6">
                         <div class="bg-blue-900 text-white px-4 py-2 rounded-t-xl font-bold flex justify-between items-center shadow-md">
-                            <span class="truncate">${category}</span><span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs">${works.length} ผลงาน</span>
+                            <div class="flex items-center gap-2 w-3/4">
+                                <input type="number" value="1" class="w-10 text-center text-blue-900 font-bold rounded outline-none p-0.5" title="ลำดับประเภท">
+                                <span class="truncate">${category}</span>
+                            </div>
+                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs shrink-0">${works.length} ผลงาน</span>
                         </div>
                         <div class="glass-panel rounded-t-none p-3 works-container min-h-[50px]" data-category="${category}">
                 `;
+                
                 works.forEach(work => {
                     const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
+                    let levelColor = 'bg-gray-100 text-gray-600';
+                    if(work.level.includes('สะเดา')) levelColor = 'bg-blue-100 text-blue-700';
+                    else if(work.level.includes('ปาดัง')) levelColor = 'bg-green-100 text-green-700';
+                    else if(work.level.includes('รพ.สต')) levelColor = 'bg-orange-100 text-orange-700';
+
                     html += `
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card cursor-pointer ${work.status === 'active' ? 'active-queue' : ''}" data-id="${work.id}" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
-                            <div class="drag-handle text-gray-300 hover:text-blue-500 px-1 py-2" onclick="event.stopPropagation()"><i class="fas fa-grip-vertical text-lg"></i></div>
-                            <div class="flex-grow pl-1">
-                                <div class="flex justify-between items-start"><h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-1">${work.title}</h3><span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg">${work.sequence}</span></div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card relative overflow-hidden group cursor-pointer ${work.status === 'active' ? 'active-queue' : ''}" data-id="${work.id}" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
+                            <div class="drag-handle text-gray-300 hover:text-blue-500 px-1 py-2" onclick="event.stopPropagation()">
+                                <i class="fas fa-grip-vertical text-lg"></i>
                             </div>
-                        </div>`;
+                            <div class="flex-grow pl-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-1">${work.title}</h3>
+                                    <span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg border border-blue-100 shrink-0 ml-2">${work.sequence}</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${levelColor}">${work.level}</span>
+                                    <p class="text-xs text-gray-500 line-clamp-1"><i class="fas fa-user-circle"></i> ${work.presenter}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 });
                 html += `</div></div>`;
             }
-            html += `</div>`; document.getElementById('content-area').innerHTML = html;
+            html += `</div>`;
+            contentArea.innerHTML = html;
+
+            if(currentUser.role !== 'Judge') {
+                document.querySelectorAll('.works-container').forEach(container => {
+                    new Sortable(container, { handle: '.drag-handle', animation: 250, ghostClass: 'sortable-ghost', onEnd: function (evt) { updateSequenceAfterDrag(evt.to); } });
+                });
+            }
+        }
+
+        // ================= 5.1 ระบบ Pop-up รายละเอียด & ขึ้นคิว =================
+        function showFullDetails(workId, title, presenter, position, level, status) {
+            let isJudge = currentUser && currentUser.role === 'Judge';
+            let btnText = status === 'active' ? '<i class="fas fa-times-circle"></i> ยกเลิกคิว' : '<i class="fas fa-bullhorn"></i> ขึ้นคิวให้คะแนน';
+            let btnColor = status === 'active' ? '#ef4444' : '#10b981';
+
+            Swal.fire({
+                title: '<span class="text-blue-900 text-lg font-bold">รายละเอียดผลงาน</span>',
+                html: `
+                    <div class="text-left mt-2 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <p class="font-bold text-gray-800 mb-2">เรื่อง:</p>
+                        <p class="text-blue-700 text-sm mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">${title}</p>
+                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-user text-blue-400 w-5"></i> ${presenter}</p>
+                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-briefcase text-blue-400 w-5"></i> ${position}</p>
+                        <p class="text-sm text-gray-700"><i class="fas fa-hospital text-red-400 w-5"></i> ${level}</p>
+                    </div>`,
+                showCancelButton: true,
+                showConfirmButton: !isJudge, 
+                confirmButtonText: btnText,
+                confirmButtonColor: btnColor,
+                cancelButtonText: 'ปิดหน้าต่าง',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed && !isJudge) {
+                    toggleQueue(workId, status === 'active' ? 'waiting' : 'active');
+                }
+            });
+        }
+
+        async function toggleQueue(workId, newStatus) {
+            const Toast = Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 1500 });
+            Toast.fire({ icon: 'info', title: 'กำลังอัปเดตคิว...' });
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateWorkStatus", workId: workId, status: newStatus }) });
+                const result = await response.json();
+                if(result.success) { Toast.fire({ icon: 'success', title: 'สำเร็จ' }); fetchAllData().then(renderWorksList); }
+            } catch(e) { Toast.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด' }); }
+        }
+
+        async function updateSequenceAfterDrag(containerEl) {
+            const cards = containerEl.querySelectorAll('.work-card');
+            const updates = [];
+            cards.forEach((card, index) => {
+                const newSeq = index + 1;
+                card.querySelector('.seq-badge').innerText = newSeq; 
+                updates.push({ id: card.dataset.id, seq: newSeq });
+            });
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateSequence", updates: updates }) });
         }
 
         // ================= 6. หน้า Scoring =================
-        function renderScoringList() { /* โค้ดเรนเดอร์หน้า Scoring ของเดิม (ละไว้) */
+        function renderScoringList() {
+            const contentArea = document.getElementById('content-area');
             const activeWorks = worksData.filter(w => w.status === 'active' && w.group === currentUser.group);
-            if(activeWorks.length === 0) { document.getElementById('content-area').innerHTML = `<div class="glass-panel p-8 text-center text-gray-500 mt-10">ไม่มีคิว</div>`; return; }
-            let html = `<div class="pb-6"><h2 class="font-bold text-blue-900 mb-4 px-2">คิวให้คะแนน</h2>`;
+
+            if(activeWorks.length === 0) {
+                contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500 mt-10"><i class="fas fa-coffee text-4xl mb-4 text-gray-300"></i><p>ยังไม่มีผลงานที่รอรับการประเมิน<br>โปรดรอทีมงานขึ้นคิว</p></div>`;
+                return;
+            }
+
+            let html = `<div class="pb-6"><h2 class="font-bold text-blue-900 mb-4 px-2"><i class="fas fa-bell text-yellow-500"></i> คิวให้คะแนนของคุณ</h2>`;
+            
             activeWorks.sort((a, b) => a.sequence - b.sequence).forEach(work => {
                 const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
                 const myScore = scoresData.find(s => s.workId === work.id && s.judgeId === currentUser.id);
                 let isScored = myScore && myScore.status === 'submitted';
+                let cardClass = isScored ? 'scored-neon' : 'border-gray-100';
+                let btnText = isScored ? '<i class="fas fa-check mb-1"></i> ดูคะแนน' : '<i class="fas fa-pen mb-1"></i> ประเมิน';
+                let btnColor = isScored ? 'bg-green-500 text-white' : 'bg-blue-600 text-white';
+
                 html += `
-                    <div class="bg-white p-4 rounded-xl shadow mb-3 flex items-center gap-3 ${isScored ? 'scored-neon' : ''}">
-                        <button onclick="openScoringForm('${work.id}', '${work.category}', '${safeTitle}')" class="shrink-0 ${isScored ? 'bg-green-500' : 'bg-blue-600'} text-white px-2 py-3 rounded-xl font-bold text-xs w-16">ประเมิน</button>
-                        <div class="flex-grow pl-2" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
-                            <p class="text-xs font-bold text-blue-500">${work.category}</p><h3 class="font-bold text-gray-800 text-sm line-clamp-2">${work.title}</h3>
+                    <div class="bg-white p-4 rounded-xl shadow mb-3 flex items-center gap-3 relative overflow-hidden ${cardClass}">
+                        <button onclick="openScoringForm('${work.id}', '${work.category}', '${safeTitle}')" class="shrink-0 ${btnColor} hover:bg-opacity-80 px-2 py-3 rounded-xl transition shadow-md font-bold text-xs flex flex-col items-center justify-center w-16">
+                            ${btnText}
+                        </button>
+                        <div class="flex-grow pl-2 border-l-2 border-gray-100 cursor-pointer" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
+                            <p class="text-xs font-bold text-blue-500 mb-1">${work.category}</p>
+                            <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${work.title}</h3>
+                            <p class="text-xs text-gray-500 mt-2"><i class="fas fa-user text-gray-300"></i> ${work.presenter}</p>
                         </div>
-                    </div>`;
+                    </div>
+                `;
             });
-            html += `</div>`; document.getElementById('content-area').innerHTML = html;
+            html += `</div>`;
+            document.getElementById('content-area').innerHTML = html;
         }
 
-        // ================= 7. ระบบสรุปผล (Summary) และการแก้ไข =================
+        // ================= 7. ระบบสรุปผล (Summary) และการพิมพ์ =================
         function renderSummary() {
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             const categories = [...new Set(myWorks.map(w => w.category))];
@@ -371,7 +523,6 @@
             if(catFilter !== 'all') filteredWorks = filteredWorks.filter(w => w.category === catFilter);
             if(levelFilter !== 'all') filteredWorks = filteredWorks.filter(w => w.level === levelFilter);
 
-            // Grouping by Category -> Level
             const grouped = {};
             filteredWorks.forEach(w => {
                 if(!grouped[w.category]) grouped[w.category] = {};
@@ -385,13 +536,11 @@
                 for (let lvl in grouped[cat]) {
                     let worksInGroup = grouped[cat][lvl];
                     
-                    // หากเป็นกรรมการ ดูเฉพาะผลงานที่มีคะแนนตัวเอง
                     if(currentUser.role === 'Judge') {
                         worksInGroup = worksInGroup.filter(w => scoresData.some(s => s.workId === w.id && s.judgeId === currentUser.id));
                         if(worksInGroup.length === 0) continue;
                     }
 
-                    // หาว่าในกลุ่มนี้มีกรรมการคนไหนให้คะแนนบ้าง (เพื่อสร้างหัวตาราง)
                     let judgesSet = new Set();
                     if(currentUser.role !== 'Judge') {
                         worksInGroup.forEach(w => {
@@ -400,27 +549,20 @@
                     }
                     const judgeNames = Array.from(judgesSet);
 
-                    // คำนวณคะแนนและจัดอันดับ
                     worksInGroup.forEach(w => {
-                        w.summaryScores = {};
-                        w.finalTotal = 0;
+                        w.summaryScores = {}; w.finalTotal = 0;
                         const wScores = scoresData.filter(s => s.workId === w.id && s.status === 'submitted');
                         
                         if(currentUser.role === 'Judge') {
                             const myS = wScores.find(s => s.judgeId === currentUser.id);
                             w.finalTotal = myS ? myS.totalScore : 0;
                         } else {
-                            wScores.forEach(s => {
-                                w.summaryScores[s.judgeName] = s.totalScore;
-                                w.finalTotal += s.totalScore;
-                            });
+                            wScores.forEach(s => { w.summaryScores[s.judgeName] = s.totalScore; w.finalTotal += s.totalScore; });
                         }
                     });
                     
-                    // เรียงคะแนนมากไปน้อย
                     worksInGroup.sort((a, b) => b.finalTotal - a.finalTotal);
 
-                    // --- สร้างหน้าปริ้นท์และตารางโชว์ ---
                     displayHtml += `
                         <div class="print-container glass-panel p-4 mb-6 bg-white overflow-x-auto shadow-sm">
                             <div class="print-header hidden no-print print-only">
@@ -428,12 +570,10 @@
                                 <span style="font-size: 14pt; font-weight: normal;">ณ โรงพยาบาลสะเดา</span><br>
                                 <span style="font-size: 12pt; font-weight: normal;">ประเภท: ${cat} | ระดับ: ${lvl}</span>
                             </div>
-                            
                             <div class="no-print mb-3 border-l-4 border-blue-500 pl-2">
                                 <h3 class="font-bold text-blue-900">${cat}</h3>
                                 <p class="text-sm text-gray-500">ระดับ: ${lvl}</p>
                             </div>
-
                             <table class="print-table w-full text-sm">
                                 <thead>
                                     <tr class="bg-blue-50 text-blue-900">
@@ -443,9 +583,8 @@
                                         <th class="text-left w-24">ตำแหน่ง</th>
                     `;
 
-                    // หัวตารางคะแนน
                     if(currentUser.role === 'Judge') {
-                        displayHtml += `<th>คะแนนของคุณ</th><th class="no-print">จัดการ</th>`;
+                        displayHtml += `<th>คะแนนของคุณ</th><th class="no-print w-16">จัดการ</th>`;
                     } else {
                         judgeNames.forEach(jn => displayHtml += `<th class="w-16">${jn}</th>`);
                         displayHtml += `<th class="w-20 bg-green-50 text-green-800">คะแนนรวม</th>`;
@@ -453,7 +592,6 @@
 
                     displayHtml += `</tr></thead><tbody>`;
 
-                    // ข้อมูลแถว
                     worksInGroup.forEach((w, index) => {
                         const safeTitle = w.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
                         displayHtml += `
@@ -487,20 +625,25 @@
             container.innerHTML = displayHtml;
         }
 
-        // ================= 8. ระบบแก้ไขคะแนน (Judge Only) =================
+        // ================= 8. ระบบให้คะแนน & แก้ไขคะแนน =================
         function editScore(workId, category, title) {
-            // ดึงคะแนนเดิมจาก scoresData
             const myScore = scoresData.find(s => s.workId === workId && s.judgeId === currentUser.id);
             openScoringForm(workId, category, title, myScore);
         }
 
-        // ฟังก์ชันฟอร์มให้คะแนน (รับ parameter ตัวที่ 4 เพื่อดึงค่าเดิมมาแสดง)
         function openScoringForm(workId, category, title, existingScore = null) {
             document.getElementById('current-menu-title').innerText = existingScore ? "แก้ไขคะแนน" : "แบบประเมิน";
             const criteria = criteriaConfig[category];
             if(!criteria) return;
             
-            let html = `<div class="glass-panel p-4 md:p-6 pb-40"><div class="border-b-2 border-blue-200 pb-3 mb-4"><h2 class="text-lg md:text-xl font-bold text-blue-900 leading-tight">${title}</h2><p class="text-xs font-semibold text-white bg-blue-600 inline-block px-3 py-1 rounded-full mt-2">${category}</p></div><form id="score-form" onsubmit="confirmSubmit(event, '${workId}', '${category}')">`;
+            let html = `
+                <div class="glass-panel p-4 md:p-6 pb-40">
+                    <div class="border-b-2 border-blue-200 pb-3 mb-4">
+                        <h2 class="text-lg md:text-xl font-bold text-blue-900 leading-tight">${title}</h2>
+                        <p class="text-xs font-semibold text-white bg-blue-600 inline-block px-3 py-1 rounded-full mt-2">${category}</p>
+                    </div>
+                    <form id="score-form" onsubmit="confirmSubmit(event, '${workId}', '${category}')">
+            `;
 
             criteria.forEach(sec => {
                 html += `<div class="bg-blue-50 p-3 md:p-4 rounded-xl mb-4 border border-blue-100"><h3 class="font-bold text-blue-800 mb-4 text-sm md:text-base border-l-4 border-blue-500 pl-2">${sec.section}</h3>`;
@@ -517,11 +660,27 @@
                 html += `</div>`;
             });
 
-            html += `<div class="flex items-center justify-between bg-red-50 p-4 rounded-xl border border-red-100 mb-4"><label class="font-bold text-red-600">หักลบคะแนน</label><input type="number" id="deduct_score" min="0" max="100" value="0" class="w-20 p-2 text-center rounded border border-red-200 font-bold text-red-600 outline-none" oninput="calculateTotal()"></div><div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] p-3 flex justify-between items-center px-4 md:px-10"><div><p class="text-xs text-gray-500 font-semibold">รวม</p><p class="text-3xl font-bold text-blue-900"><span id="total_score_display">0</span></p></div><div class="flex gap-2"><button type="button" onclick="saveScore('${workId}', '${category}', 'draft')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">บันทึกร่าง</button><button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg text-sm shadow-md">ยืนยันส่ง</button></div></div></form></div>`;
+            html += `
+                    <div class="flex items-center justify-between bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
+                        <label class="font-bold text-red-600">หักลบคะแนน</label>
+                        <input type="number" id="deduct_score" min="0" max="100" value="0" class="w-20 p-2 text-center rounded border border-red-200 font-bold text-red-600 outline-none" oninput="calculateTotal()">
+                    </div>
+                    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] p-3 flex justify-between items-center px-4 md:px-10">
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">รวม</p>
+                            <p class="text-3xl font-bold text-blue-900"><span id="total_score_display">0</span></p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="saveScore('${workId}', '${category}', 'draft')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">บันทึกร่าง</button>
+                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg text-sm shadow-md">ยืนยันส่ง</button>
+                        </div>
+                    </div>
+                    </form>
+                </div>
+            `;
             
             document.getElementById('content-area').innerHTML = html;
 
-            // นำคะแนนเดิมมาใส่กลับเข้าไป (ถ้าเป็นการแก้ไข)
             if(existingScore && existingScore.scoreDetails) {
                 try {
                     const details = JSON.parse(existingScore.scoreDetails);
@@ -537,7 +696,6 @@
             }
         }
 
-        // --- ส่วนฟังก์ชันคำนวณและ Save ของเดิม ---
         function calculateTotal() {
             let total = 0; document.querySelectorAll('input[type="range"]').forEach(inp => total += parseInt(inp.value || 0));
             total -= parseInt(document.getElementById('deduct_score').value || 0);
@@ -545,23 +703,34 @@
         }
 
         function confirmSubmit(e, workId, category) {
-            e.preventDefault(); Swal.fire({ title: 'ยืนยันจัดเก็บคะแนน?', text: "หากยืนยัน คะแนนจะถูกส่งไปหน้าสรุปผล", icon: 'question', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#6b7280', confirmButtonText: 'ใช่, ยืนยัน', cancelButtonText: 'ไม่ใช่' }).then((result) => { if (result.isConfirmed) saveScore(workId, category, 'submitted'); });
+            e.preventDefault(); 
+            Swal.fire({ title: 'ยืนยันจัดเก็บคะแนน?', text: "หากยืนยัน คะแนนจะถูกส่งไปหน้าสรุปผล", icon: 'question', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#6b7280', confirmButtonText: 'ใช่, ยืนยัน', cancelButtonText: 'ไม่ใช่' }).then((result) => { 
+                if (result.isConfirmed) saveScore(workId, category, 'submitted'); 
+            });
         }
 
         async function saveScore(workId, category, status) {
-            const deduct = parseInt(document.getElementById('deduct_score').value || 0); const total = parseInt(document.getElementById('total_score_display').innerText);
+            const deduct = parseInt(document.getElementById('deduct_score').value || 0); 
+            const total = parseInt(document.getElementById('total_score_display').innerText);
             let scoreData = {}; document.querySelectorAll('input[type="range"]').forEach(inp => scoreData[inp.id] = parseInt(inp.value));
+            
             showLoading(true);
             try {
                 const payload = { action: "submitScore", workId: workId, judgeId: currentUser.id, judgeName: currentUser.name, category: category, scores: scoreData, deduct: deduct, totalScore: total, status: status };
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-                if((await response.json()).success) { Swal.fire('สำเร็จ', status === 'draft' ? 'บันทึกฉบับร่างแล้ว' : 'ส่งคะแนนเรียบร้อย', 'success'); navigate(currentUser.role === 'Judge' ? 'summary' : 'scoring'); }
+                if((await response.json()).success) { 
+                    Swal.fire('สำเร็จ', status === 'draft' ? 'บันทึกฉบับร่างแล้ว' : 'ส่งคะแนนเรียบร้อย', 'success'); 
+                    navigate(currentUser.role === 'Judge' && status === 'submitted' ? 'summary' : 'scoring'); 
+                }
             } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้', 'error'); } finally { showLoading(false); }
         }
 
-        function logout() { /*...โค้ดเดิม...*/ currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = ''; }
-        function showFullDetails(workId, title, presenter, position, level, status) { /*...โค้ดเดิม...*/ }
-        function toggleQueue(workId, newStatus) { /*...โค้ดเดิม...*/ }
+        // ================= 9. Logout =================
+        function logout() { 
+            Swal.fire({ title: 'ออกจากระบบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก' }).then((result) => {
+                if (result.isConfirmed) { currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = ''; }
+            });
+        }
     </script>
 </body>
 </html>
