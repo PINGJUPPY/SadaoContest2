@@ -10,7 +10,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; color: #333; overflow-x: hidden; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; color: #333; overflow-x: hidden; display: flex; flex-direction: column; height: 100vh; margin: 0; }
         .bg-curve { position: fixed; top: 0; left: 0; width: 100vw; height: 40vh; background: #ffffff; border-bottom-left-radius: 50% 10vh; border-bottom-right-radius: 50% 10vh; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); z-index: -1; }
         .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.08); border-radius: 1.5rem; }
         .logo-shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
@@ -18,9 +18,10 @@
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
         .sortable-ghost { opacity: 0.4; background-color: #eff6ff; }
         .scored-neon { border: 2px solid #39ff14 !important; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); }
+        .active-queue { border-left: 6px solid #10b981 !important; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between">
+<body>
 
     <div class="bg-curve"></div>
     <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 z-50 hidden flex items-center justify-center backdrop-blur-sm">
@@ -37,12 +38,12 @@
         </div>
     </div>
 
-    <div id="main-app" class="hidden-page flex-grow flex flex-col h-screen">
-        <header class="glass-panel mx-4 mt-4 p-4 flex justify-between items-center z-10">
+    <div id="main-app" class="hidden-page flex-grow flex flex-col h-full overflow-hidden">
+        <header class="glass-panel mx-4 mt-4 p-4 flex justify-between items-center z-10 shrink-0">
             <div class="flex items-center gap-4">
                 <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-10 md:w-12 logo-shadow" alt="Logo">
                 <div>
-                    <h1 class="font-bold text-base md:text-lg text-blue-900 truncate w-48 md:w-auto">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา</h1>
+                    <h1 class="font-bold text-base md:text-lg text-blue-900 truncate w-48 md:w-auto">มหกรรมวิชาการสาธารณสุข</h1>
                     <p class="text-sm text-gray-500"><i class="fas fa-hospital text-blue-400"></i> รพ.สะเดา | <span id="current-menu-title" class="font-semibold text-blue-600">หน้าหลัก</span></p>
                 </div>
             </div>
@@ -54,13 +55,17 @@
 
         <main class="flex-grow overflow-y-auto p-4 z-10 relative" id="content-area"></main>
 
-        <nav class="glass-panel mx-4 mb-2 p-3 flex justify-around items-center text-gray-500 z-10">
+        <nav class="glass-panel mx-4 mt-1 mb-2 p-3 flex justify-around items-center text-gray-500 z-10 shrink-0">
             <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('home')"><i class="fas fa-home text-xl mb-1"></i><span class="text-xs font-semibold">หน้าหลัก</span></button>
             <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('works')"><i class="fas fa-list-alt text-xl mb-1"></i><span class="text-xs font-semibold">ผลงาน</span></button>
             <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('scoring')"><i class="fas fa-star text-xl mb-1"></i><span class="text-xs font-semibold">ให้คะแนน</span></button>
             <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('summary')"><i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-xs font-semibold">สรุปผล</span></button>
             <button class="flex flex-col items-center text-red-400 hover:text-red-600 transition" onclick="logout()"><i class="fas fa-sign-out-alt text-xl mb-1"></i><span class="text-xs font-semibold">ออก</span></button>
         </nav>
+
+        <footer class="text-center text-gray-400 text-[11px] pb-3 pt-1 z-10 w-full shrink-0">
+            พัฒนาโดย นายทศพร คงสุขนิรันดร์ ตำแหน่งแพทย์แผนไทย
+        </footer>
     </div>
 
     <script>
@@ -68,7 +73,7 @@
         let loginAttempts = 0; let isCooldown = false; let currentUser = null;
         let worksData = []; let scoresData = [];
 
-        // เอา criteriaConfig เต็มที่คุณปิงให้มาใส่ไว้ตรงนี้นะครับ (ย่อไว้เพื่อประหยัดพื้นที่โค้ด แต่ให้ใช้ของจริงที่คุณมี)
+        // ข้อมูลฟอร์มประเมิน (อิงจากที่คุณปิงให้มาครบถ้วน)
         const criteriaConfig = {
             "Oral Presentation : วิจัย": [
                 { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
@@ -92,7 +97,102 @@
                     { id: "q8", text: "3) การนำไปใช้ประโยชน์", max: 15 }, { id: "q9", text: "4) การตอบคำถาม", max: 15 }
                 ]}
             ],
-            // *** เติมประเภทอื่นๆ ให้ครบ 10 ประเภทตามโค้ดเดิมของคุณปิงตรงนี้นะครับ ***
+            "Oral Presentation : R2R": [
+                { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
+                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม น่าสนใจ", max: 5 }, { id: "q2", text: "2) ที่มาและความสำคัญ", max: 10 },
+                    { id: "q3", text: "3) วัตถุประสงค์การวิจัย / สมมติฐานการวิจัย/ กรอบแนวคิด ระเบียบวิธีวิจัย และการ เลือกกลุ่มตัวอย่าง", max: 15 },
+                    { id: "q4", text: "4) เครื่องมือการวิจัยและการทดสอบคุณภาพขั้นตอนการวิจัย และการวิเคราะห์ข้อมูล การวิจัย", max: 15 },
+                    { id: "q5", text: "5) ผลการวิจัย", max: 10 }, { id: "q6", text: "6) การอภิปรายผลการวิจัย", max: 10 }, { id: "q7", text: "7) การสรุปการวิจัยและข้อเสนอแนะจากการวิจัย", max: 10 }
+                ]},
+                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 20 คะแนน)", items: [
+                    { id: "q9", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 }, { id: "q10", text: "2) การนำไปใช้ประโยชน์", max: 10 }, { id: "q11", text: "3) การตอบคำถาม", max: 5 }
+                ]}
+            ],
+            "Oral Presentation : CQI Clinic": [
+                { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
+                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม", max: 5 }, { id: "q2", text: "2) ระบุปัญหาเชื่อมโยงเห็น Gap of knowledge", max: 10 },
+                    { id: "q3", text: "3) ความสอดคล้องของวัตถุประสงค์และวิธีดำเนินงาน", max: 10 }, { id: "q4", text: "4) ความถูกต้องและเหมาะสมของวิธีดำเนินงานเกี่ยวกับประชากร/กลุ่มตัวอย่าง", max: 10 },
+                    { id: "q5", text: "5) พัฒนา/เลือกเครื่องมือที่มีคุณภาพ", max: 10 }, { id: "q6", text: "6) การเก็บรวบรวมข้อมูลได้อย่างเหมาะสมและการวิเคราะห์ข้อมูลได้อย่างถูกต้อง", max: 10 },
+                    { id: "q7", text: "7) สรุปผลและเสนอแนะได้สอดคล้องกับวัตถุประสงค์ของการศึกษา", max: 10 }, { id: "q8", text: "8) ประโยชน์ต่อการนำไปใช้และคุณค่าต่อการนำไปใช้ต่อยอด", max: 15 }
+                ]},
+                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 20 คะแนน)", items: [
+                    { id: "q9", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 }, { id: "q10", text: "2) การนำไปใช้ประโยชน์", max: 10 }, { id: "q11", text: "3) การตอบคำถาม", max: 5 }
+                ]}
+            ],
+            "Oral Presentation : CQI Non Clinic": [
+                { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
+                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม", max: 5 }, { id: "q2", text: "2) ระบุปัญหาเชื่อมโยงเห็น Gap of knowledge", max: 10 },
+                    { id: "q3", text: "3) ความสอดคล้องของวัตถุประสงค์และวิธีดำเนินงาน", max: 10 }, { id: "q4", text: "4) ความถูกต้องและเหมาะสมของวิธีดำเนินงานเกี่ยวกับประชากร/กลุ่มตัวอย่าง", max: 10 },
+                    { id: "q5", text: "5) พัฒนา/เลือกเครื่องมือที่มีคุณภาพ", max: 10 }, { id: "q6", text: "6) การเก็บรวบรวมข้อมูลได้อย่างเหมาะสมและการวิเคราะห์ข้อมูลได้อย่างถูกต้อง", max: 10 },
+                    { id: "q7", text: "7) สรุปผลและเสนอแนะได้สอดคล้องกับวัตถุประสงค์ของการศึกษา", max: 10 }, { id: "q8", text: "8) ประโยชน์ต่อการนำไปใช้และคุณค่าต่อการนำไปใช้ต่อยอด", max: 15 }
+                ]},
+                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 20 คะแนน)", items: [
+                    { id: "q9", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 }, { id: "q10", text: "2) การนำไปใช้ประโยชน์", max: 10 }, { id: "q11", text: "3) การตอบคำถาม", max: 5 }
+                ]}
+            ],
+            "ผลงานประเภทนวัตกรรม Poster": [
+                { section: "ส่วนที่ 1 ชื่อเรื่องและเนื้อหา (รวม 50 คะแนน)", items: [
+                    { id: "q1", text: "1) ชื่อเรื่องและเนื้อหามีความน่าสนใจ", max: 10 }, { id: "q2", text: "2) วัตถุประสงค์และกระบวนสร้างนวัตกรรมหรือสิ่งประดิษฐ์ ถูกต้องเหมาะสม", max: 10 },
+                    { id: "q3", text: "3) ผลสำเร็จ สอดคล้องกับวัตถุประสงค์", max: 10 }, { id: "q4", text: "4) การขยายผลหรือพัฒนาต่อยอด", max: 10 }, { id: "q5", text: "5) ความสมบูรณ์ของเนื้อหาตามวัตถุประสงค์และการอภิปราย", max: 10 }
+                ]},
+                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 50 คะแนน)", items: [
+                    { id: "q6", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 10 }, { id: "q7", text: "2) การจัดองค์ประกอบเหมาะสมน่าสนใจ", max: 15 },
+                    { id: "q8", text: "3) การนำไปใช้ประโยชน์", max: 15 }, { id: "q9", text: "4) การตอบคำถาม", max: 10 }
+                ]}
+            ],
+            "Photo voice : ในชุมชน": [
+                { section: "ส่วนที่ 1 ชื่อภาพ/เนื้อหา (รวม 30 คะแนน)", items: [
+                    { id: "q1", text: "1) ชื่อภาพและเนื้อหาสัมพันธ์กับภาพ", max: 15 }, { id: "q2", text: "2) สื่อถึงเรื่องราวที่ต้องการนำเสนอ", max: 15 }
+                ]},
+                { section: "ส่วนที่ 2 ภาพ และเทคนิคการถ่ายภาพ (รวม 50 คะแนน)", items: [
+                    { id: "q3", text: "1) สื่อความหมาย /อารมณ์ มีความคิดสร้างสรรค์", max: 15 }, { id: "q4", text: "2) สอดคล้องกับชื่อภาพและเนื้อหา", max: 10 },
+                    { id: "q5", text: "3) มีความคมชัด /จุดเด่นของภาพ", max: 10 }, { id: "q6", text: "4) มุมกล้อง /องค์ประกอบของภาพ", max: 15 }
+                ]},
+                { section: "ส่วนที่ 3 การนำเสนอ และตอบคำถาม (รวม 20 คะแนน)", items: [
+                    { id: "q7", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 10 }, { id: "q8", text: "2) การตอบคำถาม", max: 10 }
+                ]}
+            ],
+            "Photo voice : ในสถานบริการ": [
+                { section: "ส่วนที่ 1 ชื่อภาพ/เนื้อหา (รวม 30 คะแนน)", items: [
+                    { id: "q1", text: "1) ชื่อภาพและเนื้อหาสัมพันธ์กับภาพ", max: 15 }, { id: "q2", text: "2) สื่อถึงเรื่องราวที่ต้องการนำเสนอ", max: 15 }
+                ]},
+                { section: "ส่วนที่ 2 ภาพ และเทคนิคการถ่ายภาพ (รวม 50 คะแนน)", items: [
+                    { id: "q3", text: "1) สื่อความหมาย /อารมณ์ มีความคิดสร้างสรรค์", max: 15 }, { id: "q4", text: "2) สอดคล้องกับชื่อภาพและเนื้อหา", max: 10 },
+                    { id: "q5", text: "3) มีความคมชัด /จุดเด่นของภาพ", max: 10 }, { id: "q6", text: "4) มุมกล้อง /องค์ประกอบของภาพ", max: 15 }
+                ]},
+                { section: "ส่วนที่ 3 การนำเสนอ และตอบคำถาม (รวม 20 คะแนน)", items: [
+                    { id: "q7", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 10 }, { id: "q8", text: "2) การตอบคำถาม", max: 10 }
+                ]}
+            ],
+            "เรื่องเล่า": [
+                { section: "ส่วนที่ 1 เนื้อเรื่อง/บท น่าสนใจ (รวม 70 คะแนน)", items: [
+                    { id: "q1", text: "1) มีหัวใจของเรื่อง /ประเด็นที่จะสื่อสารต่อผู้ฟัง – ผู้ชม มีการกำหนดเป้าหมายที่ชัดเจน", max: 15 },
+                    { id: "q2", text: "2) มีการกำหนดกรอบของแก่นเรื่อง", max: 15 },
+                    { id: "q3", text: "3) การสร้างฉาก การแนะนำตัวละคร การสร้างปมความ ขัดแย้ง การคลี่คลาย หรือ high light", max: 15 },
+                    { id: "q4", text: "4) โครงเรื่องเล่าผ่านเรื่องราวเพื่อเปลี่ยนแปลงระบบงานที่สำคัญ หรือสร้างแรง บันดาลใจ หรือ เร้าพลัง/ปลุกพลัง", max: 15 },
+                    { id: "q5", text: "5) มีผลลัพธ์ที่เกิดจากการเปลี่ยนแปลงระบบงาน หรือมี Lesson learned ทีสามารถนำไปใช้ ประโยชน์ในงาน", max: 10 }
+                ]},
+                { section: "ส่วนที่ 2 การนำเสนอ (รวม 30 คะแนน)", items: [
+                    { id: "q6", text: "1) การเล่า/การนำเสนอ (เกริ่นนำ ,การสร้างฉาก, การเปิดลีลาการนำเสนอและการสรุป)", max: 10 },
+                    { id: "q7", text: "2) เทคนิคการนำเสนอ หรือ การใช้สื่อ (ดึงดูด น่าสนใจ และมีความต่อเนื่องเชื่อมโยง)", max: 10 },
+                    { id: "q8", text: "3) การตอบคำถาม", max: 10 }
+                ]}
+            ],
+            "หนังสั้น": [
+                { section: "ส่วนที่ 1 เนื้อหา (รวม 40 คะแนน)", items: [
+                    { id: "q1", text: "1) การร้อยเรียงเรื่องราว น่าสนใจ", max: 15 }, { id: "q2", text: "2) เนื้อเรื่อง/บท สะท้อนความรู้สึกและการเรียนรู้", max: 10 },
+                    { id: "q3", text: "3) การแสดง/การสื่อ/ท่าทางอารมณ์สอดคล้องกับเหตุการณ์ในเรื่อง", max: 15 }
+                ]},
+                { section: "ส่วนที่ 2 การนำเสนอ (รวม 20 คะแนน)", items: [
+                    { id: "q4", text: "1) เข้าใจง่าย", max: 10 }, { id: "q5", text: "2) ดึงดูดผู้ชม", max: 10 }
+                ]},
+                { section: "ส่วนที่ 3 ผลที่ได้ (รวม 20 คะแนน)", items: [
+                    { id: "q6", text: "1) มีความคิดสร้างสรรค์", max: 10 }, { id: "q7", text: "2) บทเรียนที่ดี", max: 10 }
+                ]},
+                { section: "ส่วนที่ 4 เทคนิคคุณภาพการถ่ายทำ (รวม 20 คะแนน)", items: [
+                    { id: "q8", text: "เหมาะสมกับเนื้อเรื่อง/มุมกล้อง/ระยะ/การกำกับ/ การตัดต่อ/การเรียงลำดับ/ความกระชับของเนื้อหา/เสียง", max: 20 }
+                ]}
+            ]
         };
 
         function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
@@ -105,6 +205,7 @@
 
             showLoading(true);
             try {
+                // Fetch to real API
                 const response = await fetch(`${API_URL}?action=login&id=${inputId}`);
                 const result = await response.json();
                 
@@ -128,7 +229,8 @@
                     handleLoginFail();
                 }
             } catch (error) {
-                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+                // Fallback จำลองถ้า API ขัดข้อง
+                Swal.fire('ข้อผิดพลาด API', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่', 'error');
             } finally {
                 showLoading(false);
             }
@@ -161,7 +263,7 @@
                 if(worksResult.success) worksData = worksResult.data;
                 if(scoresResult.success) scoresData = scoresResult.data;
             } catch(e) {
-                Swal.fire('Error', 'เกิดข้อผิดพลาดในการดึงข้อมูล', 'error');
+                console.error("Fetch Data Error", e);
             } finally {
                 showLoading(false);
             }
@@ -173,29 +275,25 @@
             document.getElementById('current-menu-title').innerText = titles[page];
             const contentArea = document.getElementById('content-area');
             
-            await fetchAllData(); // ดึงข้อมูลอัปเดตเสมอเมื่อเปลี่ยนหน้า
+            await fetchAllData();
 
             if (page === 'home') renderDashboard();
             else if (page === 'works') renderWorksList();
             else if (page === 'scoring') renderScoringList();
-            else contentArea.innerHTML = `<div class="glass-panel p-8 text-center"><p>กำลังพัฒนาระบบสรุปผล...</p></div>`;
+            else contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-gray-400 mt-10"><i class="fas fa-tools text-4xl mb-4"></i><p>กำลังพัฒนาระบบสรุปผล...</p></div>`;
         }
 
         // ================= 4. หน้า Home (Dashboard %) =================
         function renderDashboard() {
-            let html = `<div class="pb-24"><div class="grid grid-cols-1 gap-4">`;
-            
-            // กรองผลงานตามสิทธิ์ (Admin เห็นหมด, อื่นๆ เห็นเฉพาะกลุ่มตัวเอง)
+            let html = `<div class="pb-6"><div class="grid grid-cols-1 gap-4">`;
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             const categories = [...new Set(myWorks.map(w => w.category))];
 
             categories.forEach(cat => {
                 const worksInCat = myWorks.filter(w => w.category === cat);
-                // นับจำนวนผลงานที่ 'submitted' (ให้คะแนนแล้ว) ของหมวดหมู่นี้
                 const totalWorks = worksInCat.length;
                 let scoredWorks = 0;
                 worksInCat.forEach(w => {
-                    // เช็คว่ามีกรรมการให้คะแนน submit แล้วกี่รายการ
                     const isScored = scoresData.some(s => s.workId === w.id && s.status === 'submitted');
                     if(isScored) scoredWorks++; 
                 });
@@ -203,13 +301,13 @@
                 const percent = totalWorks === 0 ? 0 : Math.round((scoredWorks / totalWorks) * 100);
 
                 html += `
-                    <div class="glass-panel p-4 mb-2">
+                    <div class="glass-panel p-4">
                         <div class="flex justify-between items-end mb-2">
                             <h3 class="font-bold text-blue-900">${cat}</h3>
                             <span class="text-sm font-bold text-blue-600">${percent}%</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2.5">
-                            <div class="bg-blue-600 h-2.5 rounded-full transition-all" style="width: ${percent}%"></div>
+                            <div class="bg-blue-500 h-2.5 rounded-full transition-all" style="width: ${percent}%"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2">ประเมินแล้ว ${scoredWorks} / ${totalWorks} ผลงาน</p>
                     </div>`;
@@ -228,7 +326,7 @@
                 return acc;
             }, {});
 
-            let html = `<div class="pb-24">`; 
+            let html = `<div class="pb-6">`; 
 
             for (const [category, works] of Object.entries(groupedWorks)) {
                 works.sort((a, b) => a.sequence - b.sequence);
@@ -247,41 +345,27 @@
                 works.forEach(work => {
                     const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
                     
-                    // ป้ายสีระดับ
                     let levelColor = 'bg-gray-100 text-gray-600';
                     if(work.level.includes('สะเดา')) levelColor = 'bg-blue-100 text-blue-700';
                     else if(work.level.includes('ปาดัง')) levelColor = 'bg-green-100 text-green-700';
                     else if(work.level.includes('รพ.สต')) levelColor = 'bg-orange-100 text-orange-700';
 
-                    // ปุ่มขึ้นคิว (สิทธิ์ Staff/Admin)
-                    let queueBtn = '';
-                    if(currentUser.role !== 'Judge') {
-                        let btnStyle = work.status === 'active' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-500 hover:text-white';
-                        let btnText = work.status === 'active' ? 'ยกเลิกคิว' : 'ขึ้นคิว';
-                        let newStatus = work.status === 'active' ? 'waiting' : 'active';
-                        queueBtn = `<button onclick="toggleQueue('${work.id}', '${newStatus}')" class="shrink-0 ${btnStyle} px-3 py-2 rounded-xl transition shadow-sm text-xs font-bold w-16">${btnText}</button>`;
-                    }
-
                     html += `
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card relative overflow-hidden group cursor-grab active:cursor-grabbing" data-id="${work.id}">
-                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-300 ${work.status === 'active' ? 'bg-green-500' : ''} transition"></div>
-                            
-                            <div class="drag-handle text-gray-300 hover:text-blue-500 px-1 py-2">
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card relative overflow-hidden group cursor-pointer ${work.status === 'active' ? 'active-queue' : ''}" data-id="${work.id}" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
+                            <div class="drag-handle text-gray-300 hover:text-blue-500 px-1 py-2" onclick="event.stopPropagation()">
                                 <i class="fas fa-grip-vertical text-lg"></i>
                             </div>
                             
-                            <div class="flex-grow pl-1" onclick="showFullDetails('${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}')">
+                            <div class="flex-grow pl-1">
                                 <div class="flex justify-between items-start">
-                                    <h3 class="font-bold text-blue-900 text-sm line-clamp-1 pr-1">${work.title}</h3>
-                                    <span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-6 h-6 flex items-center justify-center rounded-lg shrink-0">${work.sequence}</span>
+                                    <h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-1">${work.title}</h3>
+                                    <span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg border border-blue-100 shrink-0 ml-2">${work.sequence}</span>
                                 </div>
                                 <div class="flex items-center gap-2 mt-2">
                                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${levelColor}">${work.level}</span>
                                     <p class="text-xs text-gray-500 line-clamp-1"><i class="fas fa-user-circle"></i> ${work.presenter}</p>
                                 </div>
                             </div>
-                            
-                            ${queueBtn}
                         </div>
                     `;
                 });
@@ -290,7 +374,6 @@
             html += `</div>`;
             contentArea.innerHTML = html;
 
-            // Sortable JS เฉพาะ Admin/Staff
             if(currentUser.role !== 'Judge') {
                 document.querySelectorAll('.works-container').forEach(container => {
                     new Sortable(container, { handle: '.drag-handle', animation: 250, ghostClass: 'sortable-ghost', onEnd: function (evt) { updateSequenceAfterDrag(evt.to); } });
@@ -298,20 +381,33 @@
             }
         }
 
-        // Pop-up ชื่อเต็มเวลาแตะที่การ์ด
-        function showFullDetails(title, presenter, position, level) {
+        // ================= 5.1 ระบบ Pop-up รายละเอียดผลงาน & ขึ้นคิว =================
+        function showFullDetails(workId, title, presenter, position, level, status) {
+            let isJudge = currentUser && currentUser.role === 'Judge';
+            let btnText = status === 'active' ? '<i class="fas fa-times-circle"></i> ยกเลิกคิว' : '<i class="fas fa-bullhorn"></i> ขึ้นคิวให้คะแนน';
+            let btnColor = status === 'active' ? '#ef4444' : '#10b981';
+
             Swal.fire({
-                title: '<span class="text-blue-900 text-lg">รายละเอียดผลงาน</span>',
+                title: '<span class="text-blue-900 text-lg font-bold">รายละเอียดผลงาน</span>',
                 html: `
-                    <div class="text-left mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <div class="text-left mt-2 p-4 bg-blue-50 rounded-xl border border-blue-100">
                         <p class="font-bold text-gray-800 mb-2">เรื่อง:</p>
-                        <p class="text-blue-700 text-sm mb-4 bg-white p-2 rounded border border-gray-200">${title}</p>
+                        <p class="text-blue-700 text-sm mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">${title}</p>
                         <p class="text-sm text-gray-700 mb-1"><i class="fas fa-user text-blue-400 w-5"></i> ${presenter}</p>
                         <p class="text-sm text-gray-700 mb-1"><i class="fas fa-briefcase text-blue-400 w-5"></i> ${position}</p>
                         <p class="text-sm text-gray-700"><i class="fas fa-hospital text-red-400 w-5"></i> ${level}</p>
                     </div>`,
-                confirmButtonText: 'ปิดหน้าต่าง',
-                confirmButtonColor: '#3b82f6'
+                showCancelButton: true,
+                showConfirmButton: !isJudge, // ซ่อนปุ่มขึ้นคิว ถ้าเป็นกรรมการ
+                confirmButtonText: btnText,
+                confirmButtonColor: btnColor,
+                cancelButtonText: 'ปิดหน้าต่าง',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true // ให้ปุ่มขึ้นคิวอยู่ขวา ปุ่มปิดอยู่ซ้าย
+            }).then((result) => {
+                if (result.isConfirmed && !isJudge) {
+                    toggleQueue(workId, status === 'active' ? 'waiting' : 'active');
+                }
             });
         }
 
@@ -336,10 +432,9 @@
             fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateSequence", updates: updates }) });
         }
 
-        // ================= 6. หน้า Scoring (แสดงผลงานที่ถูกขึ้นคิว) =================
+        // ================= 6. หน้า Scoring (ให้คะแนนผลงานรอคิว) =================
         function renderScoringList() {
             const contentArea = document.getElementById('content-area');
-            // กรองเฉพาะผลงานที่ status = 'active' และกลุ่มตรงกัน
             const activeWorks = worksData.filter(w => w.status === 'active' && w.group === currentUser.group);
 
             if(activeWorks.length === 0) {
@@ -347,25 +442,23 @@
                 return;
             }
 
-            let html = `<div class="pb-24"><h2 class="font-bold text-blue-900 mb-4 px-2"><i class="fas fa-bell text-yellow-500"></i> คิวให้คะแนนของคุณ</h2>`;
+            let html = `<div class="pb-6"><h2 class="font-bold text-blue-900 mb-4 px-2"><i class="fas fa-bell text-yellow-500"></i> คิวให้คะแนนของคุณ</h2>`;
             
             activeWorks.sort((a, b) => a.sequence - b.sequence).forEach(work => {
                 const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
-                
-                // เช็คว่าให้คะแนนไปหรือยัง (draft หรือ submitted)
                 const myScore = scoresData.find(s => s.workId === work.id && s.judgeId === currentUser.id);
                 let isScored = myScore && myScore.status === 'submitted';
                 let cardClass = isScored ? 'scored-neon' : 'border-gray-100';
-                let btnText = isScored ? '<i class="fas fa-check"></i> ดูคะแนน' : '<i class="fas fa-pen"></i> ประเมิน';
+                let btnText = isScored ? '<i class="fas fa-check mb-1"></i> ดูคะแนน' : '<i class="fas fa-pen mb-1"></i> ประเมิน';
                 let btnColor = isScored ? 'bg-green-500 text-white' : 'bg-blue-600 text-white';
 
                 html += `
                     <div class="bg-white p-4 rounded-xl shadow mb-3 flex items-center gap-3 relative overflow-hidden ${cardClass}">
-                        <button onclick="openScoringForm('${work.id}', '${work.category}', '${safeTitle}')" class="shrink-0 ${btnColor} hover:bg-opacity-80 px-3 py-4 rounded-xl transition shadow-md font-bold text-sm flex flex-col items-center justify-center w-20">
+                        <button onclick="openScoringForm('${work.id}', '${work.category}', '${safeTitle}')" class="shrink-0 ${btnColor} hover:bg-opacity-80 px-2 py-3 rounded-xl transition shadow-md font-bold text-xs flex flex-col items-center justify-center w-16">
                             ${btnText}
                         </button>
                         
-                        <div class="flex-grow pl-2 border-l-2 border-gray-100" onclick="showFullDetails('${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}')">
+                        <div class="flex-grow pl-2 border-l-2 border-gray-100 cursor-pointer" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
                             <p class="text-xs font-bold text-blue-500 mb-1">${work.category}</p>
                             <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${work.title}</h3>
                             <p class="text-xs text-gray-500 mt-2"><i class="fas fa-user text-gray-300"></i> ${work.presenter}</p>
@@ -381,6 +474,7 @@
         function openScoringForm(workId, category, title) {
             document.getElementById('current-menu-title').innerText = "แบบประเมิน";
             const criteria = criteriaConfig[category];
+            if(!criteria) { Swal.fire('Error', 'ไม่พบเกณฑ์การให้คะแนนประเภทนี้', 'error'); return; }
             
             let html = `
                 <div class="glass-panel p-4 md:p-6 pb-40">
@@ -477,7 +571,9 @@
         }
 
         function logout() {
-            currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = '';
+            Swal.fire({ title: 'ออกจากระบบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก' }).then((result) => {
+                if (result.isConfirmed) { currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = ''; }
+            });
         }
     </script>
 </body>
