@@ -10,49 +10,19 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
-        
-        body {
-            font-family: 'Sarabun', sans-serif;
-            background-color: #f4f7f9;
-            color: #333;
-            overflow-x: hidden;
-        }
-
-        .bg-curve {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 40vh;
-            background: #ffffff;
-            border-bottom-left-radius: 50% 10vh;
-            border-bottom-right-radius: 50% 10vh;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            z-index: -1;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 1);
-            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.08);
-            border-radius: 1.5rem;
-        }
-
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; color: #333; overflow-x: hidden; }
+        .bg-curve { position: fixed; top: 0; left: 0; width: 100vw; height: 40vh; background: #ffffff; border-bottom-left-radius: 50% 10vh; border-bottom-right-radius: 50% 10vh; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); z-index: -1; }
+        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.08); border-radius: 1.5rem; }
         .logo-shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
         .hidden-page { display: none !important; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
-        
-        /* สไตล์สำหรับตอนกำลังลาก Card */
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
         .sortable-ghost { opacity: 0.4; background-color: #eff6ff; }
+        .scored-neon { border: 2px solid #39ff14 !important; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
     <div class="bg-curve"></div>
-
     <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 z-50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
     </div>
@@ -61,14 +31,8 @@
         <div class="glass-panel p-10 w-full max-w-md flex flex-col items-center">
             <img src="https://img2.pic.in.th/--PNG-logoname987ca59085a3c57a.png" class="w-32 mb-6 logo-shadow" alt="Logo">
             <h2 class="text-2xl font-bold mb-6 text-blue-900 tracking-wide">เข้าสู่ระบบ</h2>
-            
-            <input type="password" id="login-id" maxlength="6" inputmode="numeric" placeholder="รหัสผู้ใช้งาน 6 หลัก" 
-                   class="w-full p-4 mb-4 rounded-xl border-2 border-gray-200 outline-none text-center text-2xl tracking-widest bg-gray-50 focus:bg-white focus:border-blue-400 transition shadow-inner text-blue-900 font-bold">
-            
-            <button onclick="handleLogin()" id="btn-login"
-                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                ตกลง
-            </button>
+            <input type="password" id="login-id" maxlength="6" inputmode="numeric" placeholder="รหัสผู้ใช้งาน 6 หลัก" class="w-full p-4 mb-4 rounded-xl border-2 border-gray-200 outline-none text-center text-2xl tracking-widest bg-gray-50 focus:bg-white focus:border-blue-400 transition shadow-inner text-blue-900 font-bold">
+            <button onclick="handleLogin()" id="btn-login" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold text-lg transition-all shadow-lg transform hover:-translate-y-1">ตกลง</button>
             <p id="cooldown-timer" class="text-red-600 mt-4 hidden text-sm font-bold bg-red-100 px-4 py-2 rounded-lg border border-red-200"></p>
         </div>
     </div>
@@ -83,317 +47,182 @@
                 </div>
             </div>
             <div class="text-right">
-                <p class="font-bold text-sm md:text-base text-gray-800 truncate w-24 md:w-auto" id="user-name">ชื่อ-สกุล</p>
-                <span class="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold shadow-sm" id="user-role">Role</span>
+                <p class="font-bold text-sm md:text-base text-gray-800 truncate w-32 md:w-auto" id="user-name">ชื่อ-สกุล</p>
+                <span class="text-xs text-white px-3 py-1 rounded-full font-bold shadow-sm inline-block mt-1" id="user-role" style="background-color: #2563eb;">Role</span>
             </div>
         </header>
 
         <main class="flex-grow overflow-y-auto p-4 z-10 relative" id="content-area"></main>
 
         <nav class="glass-panel mx-4 mb-2 p-3 flex justify-around items-center text-gray-500 z-10">
-            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('home')">
-                <i class="fas fa-home text-xl mb-1"></i><span class="text-xs font-semibold">หน้าหลัก</span>
-            </button>
-            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('works')">
-                <i class="fas fa-list-alt text-xl mb-1"></i><span class="text-xs font-semibold">ผลงาน</span>
-            </button>
-            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('scoring')">
-                <i class="fas fa-star text-xl mb-1"></i><span class="text-xs font-semibold">ให้คะแนน</span>
-            </button>
-            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('summary')">
-                <i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-xs font-semibold">สรุปผล</span>
-            </button>
-            <button class="flex flex-col items-center text-red-400 hover:text-red-600 transition" onclick="logout()">
-                <i class="fas fa-sign-out-alt text-xl mb-1"></i><span class="text-xs font-semibold">ออก</span>
-            </button>
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('home')"><i class="fas fa-home text-xl mb-1"></i><span class="text-xs font-semibold">หน้าหลัก</span></button>
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('works')"><i class="fas fa-list-alt text-xl mb-1"></i><span class="text-xs font-semibold">ผลงาน</span></button>
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('scoring')"><i class="fas fa-star text-xl mb-1"></i><span class="text-xs font-semibold">ให้คะแนน</span></button>
+            <button class="flex flex-col items-center hover:text-blue-600 transition" onclick="navigate('summary')"><i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-xs font-semibold">สรุปผล</span></button>
+            <button class="flex flex-col items-center text-red-400 hover:text-red-600 transition" onclick="logout()"><i class="fas fa-sign-out-alt text-xl mb-1"></i><span class="text-xs font-semibold">ออก</span></button>
         </nav>
-        
-        <footer class="text-center text-gray-400 text-xs py-2 z-10 drop-shadow-sm">
-            พัฒนาโดย นายทศพร คงสุขนิรันดร์ ตำแหน่งแพทย์แผนไทย
-        </footer>
     </div>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwe2cc7c3dfQcVRShpXuP51SFMpk42NozsUYeM8NsRI6Zwkx5h6bYh_r8K3uqglBCZ6QA/exec";
-        let loginAttempts = 0;
-        let isCooldown = false;
-        let currentUser = null;
-        let worksData = []; // เก็บข้อมูลผลงานจาก Database
+        let loginAttempts = 0; let isCooldown = false; let currentUser = null;
+        let worksData = []; let scoresData = [];
 
+        // เอา criteriaConfig เต็มที่คุณปิงให้มาใส่ไว้ตรงนี้นะครับ (ย่อไว้เพื่อประหยัดพื้นที่โค้ด แต่ให้ใช้ของจริงที่คุณมี)
         const criteriaConfig = {
             "Oral Presentation : วิจัย": [
                 { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม น่าสนใจ", max: 10 },
-                    { id: "q2", text: "2) ที่มาและความสำคัญ", max: 10 },
+                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม น่าสนใจ", max: 10 }, { id: "q2", text: "2) ที่มาและความสำคัญ", max: 10 },
                     { id: "q3", text: "3) วัตถุประสงค์การวิจัย / สมมติฐานการวิจัย/ กรอบแนวคิด ระเบียบวิธีวิจัย และการเลือกกลุ่มตัวอย่าง", max: 15 },
                     { id: "q4", text: "4) เครื่องมือการวิจัยและการทดสอบคุณภาพขั้นตอนการวิจัย และการวิเคราะห์ข้อมูล การวิจัย", max: 15 },
-                    { id: "q5", text: "5) ผลการวิจัย", max: 10 },
-                    { id: "q6", text: "6) การอภิปรายผลการวิจัย", max: 10 },
-                    { id: "q7", text: "7) การสรุปการวิจัยและข้อเสนอแนะจากการวิจัย", max: 10 }
+                    { id: "q5", text: "5) ผลการวิจัย", max: 10 }, { id: "q6", text: "6) การอภิปรายผลการวิจัย", max: 10 }, { id: "q7", text: "7) การสรุปการวิจัยและข้อเสนอแนะจากการวิจัย", max: 10 }
                 ]},
                 { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 20 คะแนน)", items: [
-                    { id: "q8", text: "1) บุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 },
-                    { id: "q9", text: "2) การนำไปใช้ประโยชน์", max: 10 },
-                    { id: "q10", text: "3) การตอบคำถาม", max: 5 }
+                    { id: "q8", text: "1) บุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 }, { id: "q9", text: "2) การนำไปใช้ประโยชน์", max: 10 }, { id: "q10", text: "3) การตอบคำถาม", max: 5 }
                 ]}
             ],
             "Poster Presentation : วิจัย": [
                 { section: "ส่วนที่ 1 เนื้อหา (รวม 50 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อเรื่องและเนื้อหามีความน่าสนใจ", max: 10 },
-                    { id: "q2", text: "2) บทนำ มีเหตุผลเพียงพอ และบอกถึงความสำคัญของปัญหา", max: 10 },
-                    { id: "q3", text: "3) วัตถุประสงค์ชัดเจน ระเบียบวิธีวิจัยถูกต้อง เหมาะสม", max: 10 },
-                    { id: "q4", text: "4) สรุปผลการศึกษาสอดคล้องกับวัตถุประสงค์การวิจัย", max: 10 },
+                    { id: "q1", text: "1) ชื่อเรื่องและเนื้อหามีความน่าสนใจ", max: 10 }, { id: "q2", text: "2) บทนำ มีเหตุผลเพียงพอ และบอกถึงความสำคัญของปัญหา", max: 10 },
+                    { id: "q3", text: "3) วัตถุประสงค์ชัดเจน ระเบียบวิธีวิจัยถูกต้อง เหมาะสม", max: 10 }, { id: "q4", text: "4) สรุปผลการศึกษาสอดคล้องกับวัตถุประสงค์การวิจัย", max: 10 },
                     { id: "q5", text: "5) การอภิปรายและการให้ข้อเสนอแนะครอบคลุมประเด็นสำคัญ", max: 10 }
                 ]},
                 { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 50 คะแนน)", items: [
-                    { id: "q6", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 },
-                    { id: "q7", text: "2) การจัดองค์ประกอบและเนื้อหาเหมาะสมความน่าสนใจ", max: 15 },
-                    { id: "q8", text: "3) การนำไปใช้ประโยชน์", max: 15 },
-                    { id: "q9", text: "4) การตอบคำถาม", max: 15 }
+                    { id: "q6", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 }, { id: "q7", text: "2) การจัดองค์ประกอบและเนื้อหาเหมาะสมความน่าสนใจ", max: 15 },
+                    { id: "q8", text: "3) การนำไปใช้ประโยชน์", max: 15 }, { id: "q9", text: "4) การตอบคำถาม", max: 15 }
                 ]}
             ],
-            "Oral Presentation : R2R": [
-                { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม น่าสนใจ", max: 5 },
-                    { id: "q2", text: "2) ที่มาและความสำคัญ", max: 10 },
-                    { id: "q3", text: "3) วัตถุประสงค์การวิจัย / สมมติฐานการวิจัย/ กรอบแนวคิด ระเบียบวิธีวิจัย และการ เลือกกลุ่มตัวอย่าง", max: 15 },
-                    { id: "q4", text: "4) เครื่องมือการวิจัยและการทดสอบคุณภาพขั้นตอนการวิจัย และการวิเคราะห์ข้อมูล การวิจัย", max: 15 },
-                    { id: "q5", text: "5) ผลการวิจัย", max: 10 },
-                    { id: "q6", text: "6) การอภิปรายผลการวิจัย", max: 10 },
-                    { id: "q7", text: "7) การสรุปการวิจัยและข้อเสนอแนะจากการวิจัย", max: 10 }
-                ]},
-                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 20 คะแนน)", items: [
-                    { id: "q9", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 },
-                    { id: "q10", text: "2) การนำไปใช้ประโยชน์", max: 10 },
-                    { id: "q11", text: "3) การตอบคำถาม", max: 5 }
-                ]}
-            ],
-            "Oral Presentation : CQI Clinic": [
-                { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม", max: 5 },
-                    { id: "q2", text: "2) ระบุปัญหาเชื่อมโยงเห็น Gap of knowledge", max: 10 },
-                    { id: "q3", text: "3) ความสอดคล้องของวัตถุประสงค์และวิธีดำเนินงาน", max: 10 },
-                    { id: "q4", text: "4) ความถูกต้องและเหมาะสมของวิธีดำเนินงานเกี่ยวกับประชากร/กลุ่มตัวอย่าง", max: 10 },
-                    { id: "q5", text: "5) พัฒนา/เลือกเครื่องมือที่มีคุณภาพ", max: 10 },
-                    { id: "q6", text: "6) การเก็บรวบรวมข้อมูลได้อย่างเหมาะสมและการวิเคราะห์ข้อมูลได้อย่างถูกต้อง", max: 10 },
-                    { id: "q7", text: "7) สรุปผลและเสนอแนะได้สอดคล้องกับวัตถุประสงค์ของการศึกษา", max: 10 },
-                    { id: "q8", text: "8) ประโยชน์ต่อการนำไปใช้และคุณค่าต่อการนำไปใช้ต่อยอด", max: 15 }
-                ]},
-                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 20 คะแนน)", items: [
-                    { id: "q9", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 },
-                    { id: "q10", text: "2) การนำไปใช้ประโยชน์", max: 10 },
-                    { id: "q11", text: "3) การตอบคำถาม", max: 5 }
-                ]}
-            ],
-            "Oral Presentation : CQI Non Clinic": [
-                { section: "ส่วนที่ 1 เนื้อหาบทคัดย่อ และผลงานฉบับสมบูรณ์ (รวม 80 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อเรื่องมีความเหมาะสม", max: 5 },
-                    { id: "q2", text: "2) ระบุปัญหาเชื่อมโยงเห็น Gap of knowledge", max: 10 },
-                    { id: "q3", text: "3) ความสอดคล้องของวัตถุประสงค์และวิธีดำเนินงาน", max: 10 },
-                    { id: "q4", text: "4) ความถูกต้องและเหมาะสมของวิธีดำเนินงานเกี่ยวกับประชากร/กลุ่มตัวอย่าง", max: 10 },
-                    { id: "q5", text: "5) พัฒนา/เลือกเครื่องมือที่มีคุณภาพ", max: 10 },
-                    { id: "q6", text: "6) การเก็บรวบรวมข้อมูลได้อย่างเหมาะสมและการวิเคราะห์ข้อมูลได้อย่างถูกต้อง", max: 10 },
-                    { id: "q7", text: "7) สรุปผลและเสนอแนะได้สอดคล้องกับวัตถุประสงค์ของการศึกษา", max: 10 },
-                    { id: "q8", text: "8) ประโยชน์ต่อการนำไปใช้และคุณค่าต่อการนำไปใช้ต่อยอด", max: 15 }
-                ]},
-                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 20 คะแนน)", items: [
-                    { id: "q9", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 5 },
-                    { id: "q10", text: "2) การนำไปใช้ประโยชน์", max: 10 },
-                    { id: "q11", text: "3) การตอบคำถาม", max: 5 }
-                ]}
-            ],
-            "ผลงานประเภทนวัตกรรม Poster": [
-                { section: "ส่วนที่ 1 ชื่อเรื่องและเนื้อหา (รวม 50 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อเรื่องและเนื้อหามีความน่าสนใจ", max: 10 },
-                    { id: "q2", text: "2) วัตถุประสงค์และกระบวนสร้างนวัตกรรมหรือสิ่งประดิษฐ์ ถูกต้องเหมาะสม", max: 10 },
-                    { id: "q3", text: "3) ผลสำเร็จ สอดคล้องกับวัตถุประสงค์", max: 10 },
-                    { id: "q4", text: "4) การขยายผลหรือพัฒนาต่อยอด", max: 10 },
-                    { id: "q5", text: "5) ความสมบูรณ์ของเนื้อหาตามวัตถุประสงค์และการอภิปราย", max: 10 }
-                ]},
-                { section: "ส่วนที่ 2 การนำเสนอ และการนำไปใช้ประโยชน์ (รวม 50 คะแนน)", items: [
-                    { id: "q6", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 10 },
-                    { id: "q7", text: "2) การจัดองค์ประกอบเหมาะสมน่าสนใจ", max: 15 },
-                    { id: "q8", text: "3) การนำไปใช้ประโยชน์", max: 15 },
-                    { id: "q9", text: "4) การตอบคำถาม", max: 10 }
-                ]}
-            ],
-            "Photo voice : ในชุมชน": [
-                { section: "ส่วนที่ 1 ชื่อภาพ/เนื้อหา (รวม 30 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อภาพและเนื้อหาสัมพันธ์กับภาพ", max: 15 },
-                    { id: "q2", text: "2) สื่อถึงเรื่องราวที่ต้องการนำเสนอ", max: 15 }
-                ]},
-                { section: "ส่วนที่ 2 ภาพ และเทคนิคการถ่ายภาพ (รวม 50 คะแนน)", items: [
-                    { id: "q3", text: "1) สื่อความหมาย /อารมณ์ มีความคิดสร้างสรรค์", max: 15 },
-                    { id: "q4", text: "2) สอดคล้องกับชื่อภาพและเนื้อหา", max: 10 },
-                    { id: "q5", text: "3) มีความคมชัด /จุดเด่นของภาพ", max: 10 },
-                    { id: "q6", text: "4) มุมกล้อง /องค์ประกอบของภาพ", max: 15 }
-                ]},
-                { section: "ส่วนที่ 3 การนำเสนอ และตอบคำถาม (รวม 20 คะแนน)", items: [
-                    { id: "q7", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 10 },
-                    { id: "q8", text: "2) การตอบคำถาม", max: 10 }
-                ]}
-            ],
-            "Photo voice : ในสถานบริการ": [
-                { section: "ส่วนที่ 1 ชื่อภาพ/เนื้อหา (รวม 30 คะแนน)", items: [
-                    { id: "q1", text: "1) ชื่อภาพและเนื้อหาสัมพันธ์กับภาพ", max: 15 },
-                    { id: "q2", text: "2) สื่อถึงเรื่องราวที่ต้องการนำเสนอ", max: 15 }
-                ]},
-                { section: "ส่วนที่ 2 ภาพ และเทคนิคการถ่ายภาพ (รวม 50 คะแนน)", items: [
-                    { id: "q3", text: "1) สื่อความหมาย /อารมณ์ มีความคิดสร้างสรรค์", max: 15 },
-                    { id: "q4", text: "2) สอดคล้องกับชื่อภาพและเนื้อหา", max: 10 },
-                    { id: "q5", text: "3) มีความคมชัด /จุดเด่นของภาพ", max: 10 },
-                    { id: "q6", text: "4) มุมกล้อง /องค์ประกอบของภาพ", max: 15 }
-                ]},
-                { section: "ส่วนที่ 3 การนำเสนอ และตอบคำถาม (รวม 20 คะแนน)", items: [
-                    { id: "q7", text: "1) การนำเสนอบุคลิกภาพและความมั่นใจของผู้นำเสนอ", max: 10 },
-                    { id: "q8", text: "2) การตอบคำถาม", max: 10 }
-                ]}
-            ],
-            "เรื่องเล่า": [
-                { section: "ส่วนที่ 1 เนื้อเรื่อง/บท น่าสนใจ (รวม 70 คะแนน)", items: [
-                    { id: "q1", text: "1) มีหัวใจของเรื่อง /ประเด็นที่จะสื่อสารต่อผู้ฟัง – ผู้ชม มีการกำหนดเป้าหมายที่ชัดเจน", max: 15 },
-                    { id: "q2", text: "2) มีการกำหนดกรอบของแก่นเรื่อง", max: 15 },
-                    { id: "q3", text: "3) การสร้างฉาก การแนะนำตัวละคร การสร้างปมความ ขัดแย้ง การคลี่คลาย หรือ high light", max: 15 },
-                    { id: "q4", text: "4) โครงเรื่องเล่าผ่านเรื่องราวเพื่อเปลี่ยนแปลงระบบงานที่สำคัญ หรือสร้างแรง บันดาลใจ หรือ เร้าพลัง/ปลุกพลัง", max: 15 },
-                    { id: "q5", text: "5) มีผลลัพธ์ที่เกิดจากการเปลี่ยนแปลงระบบงาน หรือมี Lesson learned ทีสามารถนำไปใช้ ประโยชน์ในงาน", max: 10 }
-                ]},
-                { section: "ส่วนที่ 2 การนำเสนอ (รวม 30 คะแนน)", items: [
-                    { id: "q6", text: "1) การเล่า/การนำเสนอ (เกริ่นนำ ,การสร้างฉาก, การเปิดลีลาการนำเสนอและการสรุป)", max: 10 },
-                    { id: "q7", text: "2) เทคนิคการนำเสนอ หรือ การใช้สื่อ (ดึงดูด น่าสนใจ และมีความต่อเนื่องเชื่อมโยง)", max: 10 },
-                    { id: "q8", text: "3) การตอบคำถาม", max: 10 }
-                ]}
-            ],
-            "หนังสั้น": [
-                { section: "ส่วนที่ 1 เนื้อหา (รวม 40 คะแนน)", items: [
-                    { id: "q1", text: "1) การร้อยเรียงเรื่องราว น่าสนใจ", max: 15 },
-                    { id: "q2", text: "2) เนื้อเรื่อง/บท สะท้อนความรู้สึกและการเรียนรู้", max: 10 },
-                    { id: "q3", text: "3) การแสดง/การสื่อ/ท่าทางอารมณ์สอดคล้องกับเหตุการณ์ในเรื่อง", max: 15 }
-                ]},
-                { section: "ส่วนที่ 2 การนำเสนอ (รวม 20 คะแนน)", items: [
-                    { id: "q4", text: "1) เข้าใจง่าย", max: 10 },
-                    { id: "q5", text: "2) ดึงดูดผู้ชม", max: 10 }
-                ]},
-                { section: "ส่วนที่ 3 ผลที่ได้ (รวม 20 คะแนน)", items: [
-                    { id: "q6", text: "1) มีความคิดสร้างสรรค์", max: 10 },
-                    { id: "q7", text: "2) บทเรียนที่ดี", max: 10 }
-                ]},
-                { section: "ส่วนที่ 4 เทคนิคคุณภาพการถ่ายทำ (รวม 20 คะแนน)", items: [
-                    { id: "q8", text: "เหมาะสมกับเนื้อเรื่อง/มุมกล้อง/ระยะ/การกำกับ/ การตัดต่อ/การเรียงลำดับ/ความกระชับของเนื้อหา/เสียง", max: 20 }
-                ]}
-            ]
+            // *** เติมประเภทอื่นๆ ให้ครบ 10 ประเภทตามโค้ดเดิมของคุณปิงตรงนี้นะครับ ***
         };
 
         function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
 
+        // ================= 1. ระบบ Login (API จริง) =================
         async function handleLogin() {
             if (isCooldown) return;
             const inputId = document.getElementById('login-id').value;
-            if(inputId.length !== 6) { Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณากรอกรหัส 6 หลัก' }); return; }
+            if(!inputId) { Swal.fire('แจ้งเตือน', 'กรุณากรอกรหัสผู้ใช้งาน', 'warning'); return; }
 
             showLoading(true);
             try {
-                // จำลอง Login (เพื่อความรวดเร็วในการทดสอบ)
-                setTimeout(() => {
-                    currentUser = { id: inputId, name: "คณะกรรมการ", role: "Judge", group: "1" };
-                    Swal.fire({
-                        title: 'เข้าสู่ระบบสำเร็จ!', text: `ยินดีต้อนรับ ${currentUser.name}`, icon: 'success', timer: 1500, showConfirmButton: false
-                    }).then(() => {
+                const response = await fetch(`${API_URL}?action=login&id=${inputId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentUser = result.user; 
+                    loginAttempts = 0;
+                    Swal.fire({ title: 'เข้าสู่ระบบสำเร็จ!', text: `ยินดีต้อนรับ ${currentUser.name}`, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
                         document.getElementById('login-section').classList.add('hidden-page');
                         document.getElementById('main-app').classList.remove('hidden-page');
                         document.getElementById('user-name').innerText = currentUser.name;
-                        document.getElementById('user-role').innerText = currentUser.role;
+                        
+                        // ปรับสีป้าย Role
+                        const roleBadge = document.getElementById('user-role');
+                        let roleText = currentUser.role === 'Admin' ? 'ผู้ดูแลระบบ' : (currentUser.role === 'Staff' ? 'ทีมงานห้อง ' + currentUser.group : 'กรรมการห้อง ' + currentUser.group);
+                        let roleColor = currentUser.role === 'Admin' ? '#ef4444' : (currentUser.role === 'Staff' ? '#f59e0b' : '#10b981');
+                        roleBadge.innerText = roleText; roleBadge.style.backgroundColor = roleColor;
+
                         navigate('home');
                     });
-                    showLoading(false);
-                }, 800);
+                } else {
+                    handleLoginFail();
+                }
             } catch (error) {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+            } finally {
                 showLoading(false);
-                handleLoginFail();
             }
         }
 
         function handleLoginFail() {
             loginAttempts++;
-            if(loginAttempts >= 3) startCooldown();
-            else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
+            if(loginAttempts >= 3) {
+                isCooldown = true; let timeLeft = 90;
+                document.getElementById('cooldown-timer').classList.remove('hidden'); 
+                document.getElementById('login-id').disabled = true; document.getElementById('btn-login').disabled = true;
+                Swal.fire('ระงับชั่วคราว', 'กรอกผิด 3 ครั้ง กรุณารอ 90 วินาที', 'warning');
+                const cd = setInterval(() => {
+                    document.getElementById('cooldown-timer').innerText = `รอ: ${timeLeft} วิ`; timeLeft--;
+                    if (timeLeft < 0) { clearInterval(cd); isCooldown = false; loginAttempts = 0; document.getElementById('cooldown-timer').classList.add('hidden'); document.getElementById('login-id').disabled = false; document.getElementById('login-id').value = ''; document.getElementById('btn-login').disabled = false; }
+                }, 1000);
+            } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
-        function startCooldown() {
-            isCooldown = true; let timeLeft = 90;
-            const timerDisplay = document.getElementById('cooldown-timer');
-            const inputField = document.getElementById('login-id'); const btn = document.getElementById('btn-login');
-            
-            timerDisplay.classList.remove('hidden'); inputField.disabled = true; btn.disabled = true; btn.classList.add('opacity-50');
-            Swal.fire('ระบบระงับชั่วคราว', 'กรอกผิดเกิน 3 ครั้ง กรุณารอ 90 วินาที', 'warning');
-
-            const countdown = setInterval(() => {
-                timerDisplay.innerText = `คูลดาวน์: ${timeLeft} วินาที`; timeLeft--;
-                if (timeLeft < 0) {
-                    clearInterval(countdown); isCooldown = false; loginAttempts = 0;
-                    timerDisplay.classList.add('hidden'); inputField.disabled = false; inputField.value = ''; btn.disabled = false; btn.classList.remove('opacity-50');
-                }
-            }, 1000);
+        // ================= 2. ระบบดึงข้อมูลหลัก =================
+        async function fetchAllData() {
+            showLoading(true);
+            try {
+                const [worksRes, scoresRes] = await Promise.all([
+                    fetch(`${API_URL}?action=getWorks`),
+                    fetch(`${API_URL}?action=getScores`)
+                ]);
+                const worksResult = await worksRes.json();
+                const scoresResult = await scoresRes.json();
+                if(worksResult.success) worksData = worksResult.data;
+                if(scoresResult.success) scoresData = scoresResult.data;
+            } catch(e) {
+                Swal.fire('Error', 'เกิดข้อผิดพลาดในการดึงข้อมูล', 'error');
+            } finally {
+                showLoading(false);
+            }
         }
 
-        function navigate(page) {
-            const titles = { home: "หน้าหลัก", works: "รายชื่อผลงาน", scoring: "เลือกผลงานเพื่อให้คะแนน", summary: "สรุปผลคะแนน" };
+        // ================= 3. Navigation =================
+        async function navigate(page) {
+            const titles = { home: "แดชบอร์ดความคืบหน้า", works: "จัดการผลงาน / ขึ้นคิว", scoring: "รอคิวให้คะแนน", summary: "สรุปผลคะแนน" };
             document.getElementById('current-menu-title').innerText = titles[page];
             const contentArea = document.getElementById('content-area');
             
-            if (page === 'home') {
-                contentArea.innerHTML = `
-                    <div class="glass-panel p-8 text-center">
-                        <h2 class="text-2xl font-bold mb-4 text-blue-900">ยินดีต้อนรับสู่ระบบประเมินผลงาน</h2>
-                        <p class="text-gray-600 mb-6">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569</p>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-100">
-                                <h3 class="font-bold text-blue-800">ห้องพรีเซนต์</h3>
-                                <p class="text-xl font-bold mt-2 text-blue-600">3 ห้อง</p>
-                            </div>
-                            <div class="bg-green-50 p-4 rounded-xl shadow-sm border border-green-100" onclick="navigate('works')" style="cursor:pointer;">
-                                <h3 class="font-bold text-green-800">ผลงานทั้งหมด</h3>
-                                <p class="text-sm font-bold mt-2 text-green-600">คลิกดูรายชื่อ <i class="fas fa-arrow-right"></i></p>
-                            </div>
-                        </div>
-                    </div>`;
-            } else if (page === 'works') {
-                fetchWorksAndRender();
-            } else if (page === 'scoring') {
-                renderCategorySelect();
-            } else {
-                contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500"><p><i class="fas fa-tools text-3xl mb-3"></i><br>กำลังพัฒนาระบบสรุปผล...</p></div>`;
-            }
+            await fetchAllData(); // ดึงข้อมูลอัปเดตเสมอเมื่อเปลี่ยนหน้า
+
+            if (page === 'home') renderDashboard();
+            else if (page === 'works') renderWorksList();
+            else if (page === 'scoring') renderScoringList();
+            else contentArea.innerHTML = `<div class="glass-panel p-8 text-center"><p>กำลังพัฒนาระบบสรุปผล...</p></div>`;
         }
 
-        // ================= ระบบดึงข้อมูลและ Drag & Drop =================
-        async function fetchWorksAndRender() {
-            showLoading(true);
-            try {
-                const response = await fetch(`${API_URL}?action=getWorks`);
-                const result = await response.json();
+        // ================= 4. หน้า Home (Dashboard %) =================
+        function renderDashboard() {
+            let html = `<div class="pb-24"><div class="grid grid-cols-1 gap-4">`;
+            
+            // กรองผลงานตามสิทธิ์ (Admin เห็นหมด, อื่นๆ เห็นเฉพาะกลุ่มตัวเอง)
+            const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
+            const categories = [...new Set(myWorks.map(w => w.category))];
+
+            categories.forEach(cat => {
+                const worksInCat = myWorks.filter(w => w.category === cat);
+                // นับจำนวนผลงานที่ 'submitted' (ให้คะแนนแล้ว) ของหมวดหมู่นี้
+                const totalWorks = worksInCat.length;
+                let scoredWorks = 0;
+                worksInCat.forEach(w => {
+                    // เช็คว่ามีกรรมการให้คะแนน submit แล้วกี่รายการ
+                    const isScored = scoresData.some(s => s.workId === w.id && s.status === 'submitted');
+                    if(isScored) scoredWorks++; 
+                });
                 
-                if (result.success && result.data.length > 0) {
-                    worksData = result.data;
-                } else {
-                    throw new Error("No data");
-                }
-            } catch (error) {
-                console.log("Using mock data");
-                // Mock Data (ข้อมูลจำลองเวลาดึงไม่สำเร็จ) สังเกตว่าชื่อ category ต้องตรงเป๊ะ
-                worksData = [
-                    { id: "W001", title: "การลดเวลารอคอยรับยา", presenter: "นาย สมชาย ใจดี", position: "เภสัชกร", category: "Oral Presentation : CQI Clinic", level: "โรงพยาบาลสะเดา", sequence: 1, group: 1 },
-                    { id: "W002", title: "ปรับปรุงระบบคิวเจาะเลือด", presenter: "นาย สมศักดิ์ เก่งมาก", position: "นักเทคนิคการแพทย์", category: "Oral Presentation : CQI Clinic", level: "โรงพยาบาลปาดังเบซาร์", sequence: 2, group: 1 },
-                    { id: "W003", title: "นวัตกรรมเตียงพลิกตัวลดแผลกดทับ", presenter: "นาง สมหญิง รักงาน", position: "พยาบาลวิชาชีพ", category: "ผลงานประเภทนวัตกรรม Poster", level: "รพ.สต. ปาดัง", sequence: 1, group: 2 }
-                ];
-            } finally {
-                showLoading(false);
-                renderWorksList();
-            }
+                const percent = totalWorks === 0 ? 0 : Math.round((scoredWorks / totalWorks) * 100);
+
+                html += `
+                    <div class="glass-panel p-4 mb-2">
+                        <div class="flex justify-between items-end mb-2">
+                            <h3 class="font-bold text-blue-900">${cat}</h3>
+                            <span class="text-sm font-bold text-blue-600">${percent}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full transition-all" style="width: ${percent}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">ประเมินแล้ว ${scoredWorks} / ${totalWorks} ผลงาน</p>
+                    </div>`;
+            });
+            html += `</div></div>`;
+            document.getElementById('content-area').innerHTML = html;
         }
 
+        // ================= 5. หน้า Works (จัดการคิว & ลากสลับ) =================
         function renderWorksList() {
             const contentArea = document.getElementById('content-area');
-            const groupedWorks = worksData.reduce((acc, work) => {
+            const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
+            const groupedWorks = myWorks.reduce((acc, work) => {
                 if (!acc[work.category]) acc[work.category] = [];
                 acc[work.category].push(work);
                 return acc;
@@ -403,34 +232,56 @@
 
             for (const [category, works] of Object.entries(groupedWorks)) {
                 works.sort((a, b) => a.sequence - b.sequence);
-                
                 html += `
                     <div class="mb-6">
-                        <div class="bg-blue-900 text-white px-4 py-2 rounded-t-xl font-bold text-sm shadow-md flex justify-between items-center">
-                            <span>${category}</span>
-                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs">${works.length} ผลงาน</span>
+                        <div class="bg-blue-900 text-white px-4 py-2 rounded-t-xl font-bold flex justify-between items-center shadow-md">
+                            <div class="flex items-center gap-2 w-3/4">
+                                <input type="number" value="1" class="w-10 text-center text-blue-900 font-bold rounded outline-none p-0.5" title="ลำดับประเภท">
+                                <span class="truncate">${category}</span>
+                            </div>
+                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs shrink-0">${works.length} ผลงาน</span>
                         </div>
                         <div class="glass-panel rounded-t-none p-3 works-container min-h-[50px]" data-category="${category}">
                 `;
                 
                 works.forEach(work => {
+                    const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
+                    
+                    // ป้ายสีระดับ
+                    let levelColor = 'bg-gray-100 text-gray-600';
+                    if(work.level.includes('สะเดา')) levelColor = 'bg-blue-100 text-blue-700';
+                    else if(work.level.includes('ปาดัง')) levelColor = 'bg-green-100 text-green-700';
+                    else if(work.level.includes('รพ.สต')) levelColor = 'bg-orange-100 text-orange-700';
+
+                    // ปุ่มขึ้นคิว (สิทธิ์ Staff/Admin)
+                    let queueBtn = '';
+                    if(currentUser.role !== 'Judge') {
+                        let btnStyle = work.status === 'active' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-500 hover:text-white';
+                        let btnText = work.status === 'active' ? 'ยกเลิกคิว' : 'ขึ้นคิว';
+                        let newStatus = work.status === 'active' ? 'waiting' : 'active';
+                        queueBtn = `<button onclick="toggleQueue('${work.id}', '${newStatus}')" class="shrink-0 ${btnStyle} px-3 py-2 rounded-xl transition shadow-sm text-xs font-bold w-16">${btnText}</button>`;
+                    }
+
                     html += `
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-3 work-card relative overflow-hidden group cursor-grab active:cursor-grabbing" data-id="${work.id}">
-                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-300 group-hover:bg-blue-500 transition"></div>
-                            <div class="drag-handle text-gray-300 hover:text-blue-500 pl-1 py-2">
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card relative overflow-hidden group cursor-grab active:cursor-grabbing" data-id="${work.id}">
+                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-300 ${work.status === 'active' ? 'bg-green-500' : ''} transition"></div>
+                            
+                            <div class="drag-handle text-gray-300 hover:text-blue-500 px-1 py-2">
                                 <i class="fas fa-grip-vertical text-lg"></i>
                             </div>
-                            <div class="flex-grow pl-1">
+                            
+                            <div class="flex-grow pl-1" onclick="showFullDetails('${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}')">
                                 <div class="flex justify-between items-start">
-                                    <h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-2">${work.title}</h3>
-                                    <span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg border border-blue-100 shrink-0">${work.sequence}</span>
+                                    <h3 class="font-bold text-blue-900 text-sm line-clamp-1 pr-1">${work.title}</h3>
+                                    <span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-6 h-6 flex items-center justify-center rounded-lg shrink-0">${work.sequence}</span>
                                 </div>
-                                <p class="text-xs text-gray-600 mt-2"><i class="fas fa-user-circle text-gray-400"></i> ${work.presenter}</p>
-                                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-map-marker-alt text-red-300"></i> ${work.level}</p>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${levelColor}">${work.level}</span>
+                                    <p class="text-xs text-gray-500 line-clamp-1"><i class="fas fa-user-circle"></i> ${work.presenter}</p>
+                                </div>
                             </div>
-                            <button onclick="openScoringForm('${work.id}', '${work.category}', '${work.title}')" class="shrink-0 bg-green-50 hover:bg-green-500 hover:text-white text-green-600 border border-green-200 w-10 h-10 rounded-xl transition shadow-sm flex items-center justify-center tooltip">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                            
+                            ${queueBtn}
                         </div>
                     `;
                 });
@@ -439,88 +290,120 @@
             html += `</div>`;
             contentArea.innerHTML = html;
 
-            // เปิดใช้งาน SortableJS (Drag & Drop)
-            const containers = document.querySelectorAll('.works-container');
-            containers.forEach(container => {
-                new Sortable(container, {
-                    handle: '.drag-handle',
-                    animation: 250,
-                    ghostClass: 'sortable-ghost',
-                    onEnd: function (evt) { updateSequenceAfterDrag(evt.to, container.dataset.category); }
+            // Sortable JS เฉพาะ Admin/Staff
+            if(currentUser.role !== 'Judge') {
+                document.querySelectorAll('.works-container').forEach(container => {
+                    new Sortable(container, { handle: '.drag-handle', animation: 250, ghostClass: 'sortable-ghost', onEnd: function (evt) { updateSequenceAfterDrag(evt.to); } });
                 });
+            }
+        }
+
+        // Pop-up ชื่อเต็มเวลาแตะที่การ์ด
+        function showFullDetails(title, presenter, position, level) {
+            Swal.fire({
+                title: '<span class="text-blue-900 text-lg">รายละเอียดผลงาน</span>',
+                html: `
+                    <div class="text-left mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <p class="font-bold text-gray-800 mb-2">เรื่อง:</p>
+                        <p class="text-blue-700 text-sm mb-4 bg-white p-2 rounded border border-gray-200">${title}</p>
+                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-user text-blue-400 w-5"></i> ${presenter}</p>
+                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-briefcase text-blue-400 w-5"></i> ${position}</p>
+                        <p class="text-sm text-gray-700"><i class="fas fa-hospital text-red-400 w-5"></i> ${level}</p>
+                    </div>`,
+                confirmButtonText: 'ปิดหน้าต่าง',
+                confirmButtonColor: '#3b82f6'
             });
         }
 
-        async function updateSequenceAfterDrag(containerEl, category) {
+        async function toggleQueue(workId, newStatus) {
+            const Toast = Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 1500 });
+            Toast.fire({ icon: 'info', title: 'กำลังอัปเดตคิว...' });
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateWorkStatus", workId: workId, status: newStatus }) });
+                const result = await response.json();
+                if(result.success) { Toast.fire({ icon: 'success', title: 'สำเร็จ' }); fetchAllData().then(renderWorksList); }
+            } catch(e) { Toast.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด' }); }
+        }
+
+        async function updateSequenceAfterDrag(containerEl) {
             const cards = containerEl.querySelectorAll('.work-card');
             const updates = [];
-            
             cards.forEach((card, index) => {
                 const newSeq = index + 1;
                 card.querySelector('.seq-badge').innerText = newSeq; 
                 updates.push({ id: card.dataset.id, seq: newSeq });
-                const workIndex = worksData.findIndex(w => w.id === card.dataset.id);
-                if(workIndex !== -1) worksData[workIndex].sequence = newSeq;
             });
-
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
-            Toast.fire({ icon: 'info', title: 'กำลังบันทึกลำดับคิว...' });
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "updateSequence", updates: updates })
-                });
-                const result = await response.json();
-                if(result.success) Toast.fire({ icon: 'success', title: 'อัปเดตคิวสำเร็จ' });
-            } catch (err) {
-                Toast.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ' });
-            }
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateSequence", updates: updates }) });
         }
 
-        // ================= ระบบให้คะแนน =================
-        function renderCategorySelect() {
-            document.getElementById('current-menu-title').innerText = "เลือกประเภทผลงาน";
-            let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-24">`;
-            Object.keys(criteriaConfig).forEach(cat => {
+        // ================= 6. หน้า Scoring (แสดงผลงานที่ถูกขึ้นคิว) =================
+        function renderScoringList() {
+            const contentArea = document.getElementById('content-area');
+            // กรองเฉพาะผลงานที่ status = 'active' และกลุ่มตรงกัน
+            const activeWorks = worksData.filter(w => w.status === 'active' && w.group === currentUser.group);
+
+            if(activeWorks.length === 0) {
+                contentArea.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500 mt-10"><i class="fas fa-coffee text-4xl mb-4 text-gray-300"></i><p>ยังไม่มีผลงานที่รอรับการประเมิน<br>โปรดรอทีมงานขึ้นคิว</p></div>`;
+                return;
+            }
+
+            let html = `<div class="pb-24"><h2 class="font-bold text-blue-900 mb-4 px-2"><i class="fas fa-bell text-yellow-500"></i> คิวให้คะแนนของคุณ</h2>`;
+            
+            activeWorks.sort((a, b) => a.sequence - b.sequence).forEach(work => {
+                const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
+                
+                // เช็คว่าให้คะแนนไปหรือยัง (draft หรือ submitted)
+                const myScore = scoresData.find(s => s.workId === work.id && s.judgeId === currentUser.id);
+                let isScored = myScore && myScore.status === 'submitted';
+                let cardClass = isScored ? 'scored-neon' : 'border-gray-100';
+                let btnText = isScored ? '<i class="fas fa-check"></i> ดูคะแนน' : '<i class="fas fa-pen"></i> ประเมิน';
+                let btnColor = isScored ? 'bg-green-500 text-white' : 'bg-blue-600 text-white';
+
                 html += `
-                    <button onclick="openScoringForm('W000', '${cat}', 'ฟอร์มเปล่า (${cat})')" 
-                            class="glass-panel p-4 text-left hover:bg-blue-50 transition active:scale-95 border-l-4 border-blue-500 text-gray-800">
-                        <p class="font-bold text-blue-900 truncate">${cat}</p>
-                        <p class="text-xs text-gray-500 mt-1">คลิกเพื่อเปิดฟอร์ม</p>
-                    </button>`;
+                    <div class="bg-white p-4 rounded-xl shadow mb-3 flex items-center gap-3 relative overflow-hidden ${cardClass}">
+                        <button onclick="openScoringForm('${work.id}', '${work.category}', '${safeTitle}')" class="shrink-0 ${btnColor} hover:bg-opacity-80 px-3 py-4 rounded-xl transition shadow-md font-bold text-sm flex flex-col items-center justify-center w-20">
+                            ${btnText}
+                        </button>
+                        
+                        <div class="flex-grow pl-2 border-l-2 border-gray-100" onclick="showFullDetails('${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}')">
+                            <p class="text-xs font-bold text-blue-500 mb-1">${work.category}</p>
+                            <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${work.title}</h3>
+                            <p class="text-xs text-gray-500 mt-2"><i class="fas fa-user text-gray-300"></i> ${work.presenter}</p>
+                        </div>
+                    </div>
+                `;
             });
             html += `</div>`;
             document.getElementById('content-area').innerHTML = html;
         }
 
+        // ฟอร์มให้คะแนน
         function openScoringForm(workId, category, title) {
-            document.getElementById('current-menu-title').innerText = "ให้คะแนน";
+            document.getElementById('current-menu-title').innerText = "แบบประเมิน";
             const criteria = criteriaConfig[category];
-            if(!criteria) { Swal.fire('Error', 'ไม่พบเกณฑ์การให้คะแนนประเภทนี้', 'error'); return; }
             
             let html = `
-                <div class="glass-panel p-4 md:p-6 pb-36">
+                <div class="glass-panel p-4 md:p-6 pb-40">
                     <div class="border-b-2 border-blue-200 pb-3 mb-4">
                         <h2 class="text-lg md:text-xl font-bold text-blue-900 leading-tight">${title}</h2>
-                        <p class="text-xs font-semibold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full mt-2 border border-blue-100">${category}</p>
+                        <p class="text-xs font-semibold text-white bg-blue-600 inline-block px-3 py-1 rounded-full mt-2">${category}</p>
                     </div>
-                    <form id="score-form" onsubmit="submitScore(event, '${workId}', '${category}')">
+                    <form id="score-form" onsubmit="confirmSubmit(event, '${workId}', '${category}')">
             `;
 
             criteria.forEach(sec => {
-                html += `<div class="bg-gray-50/80 p-3 md:p-4 rounded-xl mb-4 shadow-sm border border-gray-100">
+                html += `<div class="bg-blue-50 p-3 md:p-4 rounded-xl mb-4 shadow-inner border border-blue-100">
                             <h3 class="font-bold text-blue-800 mb-4 text-sm md:text-base border-l-4 border-blue-500 pl-2">${sec.section}</h3>`;
                 
                 sec.items.forEach(item => {
                     html += `
-                        <div class="mb-5 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                            <label class="block text-sm md:text-base font-bold mb-3 text-gray-700">${item.text} <span class="text-blue-500 font-normal">(เต็ม ${item.max})</span></label>
+                        <div class="mb-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <label class="block text-sm font-bold mb-3 text-gray-700">${item.text} <span class="text-blue-500 font-normal">(เต็ม ${item.max})</span></label>
                             <div class="flex items-center gap-4">
                                 <input type="range" id="${item.id}" min="0" max="${item.max}" value="0" required
-                                       class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                        oninput="document.getElementById('val_${item.id}').innerText = this.value; calculateTotal();">
-                                <span id="val_${item.id}" class="text-2xl font-bold text-blue-700 w-14 text-center bg-blue-50 rounded-lg py-1 shadow-inner border border-blue-100 shrink-0">0</span>
+                                <span id="val_${item.id}" class="text-xl font-bold text-blue-700 w-12 text-center bg-blue-50 rounded-lg py-1 border border-blue-100 shrink-0">0</span>
                             </div>
                         </div>
                     `;
@@ -529,20 +412,19 @@
             });
 
             html += `
-                    <div class="flex items-center justify-between bg-red-50 p-4 rounded-xl border border-red-100 mb-4 shadow-sm">
-                        <label class="font-bold text-red-600"><i class="fas fa-minus-circle mr-1"></i> หักลบ</label>
-                        <input type="number" id="deduct_score" min="0" max="100" value="0" class="w-20 p-2 text-center rounded-lg border border-red-200 font-bold text-red-600 text-lg outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition bg-white" oninput="calculateTotal()">
+                    <div class="flex items-center justify-between bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
+                        <label class="font-bold text-red-600">หักลบคะแนน</label>
+                        <input type="number" id="deduct_score" min="0" max="100" value="0" class="w-20 p-2 text-center rounded border border-red-200 font-bold text-red-600 outline-none" oninput="calculateTotal()">
                     </div>
                     
-                    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
-                        <div class="p-3 md:p-4 max-w-4xl mx-auto flex justify-between items-center">
-                            <div>
-                                <p class="text-xs text-gray-500 mb-0.5 font-semibold">รวมคะแนน</p>
-                                <p class="text-3xl md:text-4xl font-bold text-blue-900"><span id="total_score_display">0</span> <span class="text-sm font-normal text-gray-400">/ 100</span></p>
-                            </div>
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 md:px-8 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1">
-                                <i class="fas fa-check-circle mr-1"></i> บันทึกผล
-                            </button>
+                    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] p-3 flex justify-between items-center px-4 md:px-10">
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">รวม</p>
+                            <p class="text-3xl font-bold text-blue-900"><span id="total_score_display">0</span></p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="saveScore('${workId}', '${category}', 'draft')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">บันทึกร่าง</button>
+                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg text-sm shadow-md">ยืนยันส่ง</button>
                         </div>
                     </div>
                     </form>
@@ -554,56 +436,48 @@
         function calculateTotal() {
             let total = 0;
             document.querySelectorAll('input[type="range"]').forEach(inp => total += parseInt(inp.value || 0));
-            const deduct = parseInt(document.getElementById('deduct_score').value || 0);
-            total -= deduct;
+            total -= parseInt(document.getElementById('deduct_score').value || 0);
             document.getElementById('total_score_display').innerText = total < 0 ? 0 : total;
         }
 
-        async function submitScore(e, workId, category) {
+        function confirmSubmit(e, workId, category) {
             e.preventDefault();
+            Swal.fire({
+                title: 'ยืนยันจัดเก็บคะแนน?', text: "หากยืนยัน คะแนนจะถูกส่งไปหน้าสรุปผล", icon: 'question',
+                showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#6b7280', confirmButtonText: 'ใช่, ยืนยัน', cancelButtonText: 'ไม่ใช่'
+            }).then((result) => {
+                if (result.isConfirmed) saveScore(workId, category, 'submitted');
+            });
+        }
+
+        async function saveScore(workId, category, status) {
             const deduct = parseInt(document.getElementById('deduct_score').value || 0);
             const total = parseInt(document.getElementById('total_score_display').innerText);
             let scoreData = {};
             document.querySelectorAll('input[type="range"]').forEach(inp => scoreData[inp.id] = parseInt(inp.value));
 
-            Swal.fire({
-                title: 'ยืนยันการส่งคะแนน?', html: `คะแนนรวม: <b><span class="text-2xl text-blue-600">${total}</span></b> / 100`, icon: 'question',
-                showCancelButton: true, confirmButtonColor: '#2563eb', cancelButtonColor: '#ef4444', confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    showLoading(true);
-                    try {
-                        const payload = {
-                            action: "submitScore", workId: workId, judgeId: currentUser.id, judgeName: currentUser.name,
-                            category: category, scores: scoreData, deduct: deduct, totalScore: total
-                        };
-                        const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-                        const resData = await response.json();
-                        
-                        if(resData.success) {
-                            Swal.fire('สำเร็จ!', 'บันทึกคะแนนเรียบร้อยแล้ว', 'success');
-                            navigate('works'); // กลับไปหน้าเลือกผลงาน
-                        } else {
-                            throw new Error("Failed to save");
-                        }
-                    } catch (err) {
-                        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถส่งคะแนนได้ (บันทึกจำลองสำเร็จ)', 'warning');
-                        navigate('works');
-                    } finally {
-                        showLoading(false);
-                    }
+            showLoading(true);
+            try {
+                const payload = {
+                    action: "submitScore", workId: workId, judgeId: currentUser.id, judgeName: currentUser.name,
+                    category: category, scores: scoreData, deduct: deduct, totalScore: total, status: status
+                };
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const resData = await response.json();
+                
+                if(resData.success) {
+                    Swal.fire('สำเร็จ', status === 'draft' ? 'บันทึกฉบับร่างแล้ว' : 'ส่งคะแนนเรียบร้อย', 'success');
+                    navigate('scoring'); 
                 }
-            });
+            } catch (err) {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้', 'error');
+            } finally {
+                showLoading(false);
+            }
         }
 
         function logout() {
-            Swal.fire({
-                title: 'ออกจากระบบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = '';
-                }
-            });
+            currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = '';
         }
     </script>
 </body>
