@@ -18,7 +18,9 @@
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
         .sortable-ghost { opacity: 0.4; background-color: #eff6ff; }
         .draft-neon { border: 2px solid #f59e0b !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+        .active-queue { border-left: 6px solid #10b981 !important; }
         
+        /* สไตล์สำหรับการพิมพ์ (Print) */
         @media print {
             @page { size: landscape; margin: 15mm; }
             body { background: white !important; font-size: 11pt; color: black; display: block; height: auto; }
@@ -93,10 +95,9 @@
         let worksData = []; 
         let scoresData = [];
         
-        // ตัวแปรสำหรับระบบ Real-time (Auto-Sync)
         let autoSyncInterval;
         let currentPage = 'login';
-        let isDragging = false; // ป้องกันรีเฟรชตอนกำลังลากคิว
+        let isDragging = false; // กันการรีเฟรชตอนกำลังลากการ์ด
 
         // ฐานข้อมูลเกณฑ์การประเมิน 10 ประเภท
         const criteriaConfig = {
@@ -222,7 +223,7 @@
 
         function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
 
-        // ================= 1. Login & Auto-Sync Start =================
+        // ================= 1. Login =================
         async function handleLogin() {
             if (isCooldown) return;
             const inputId = document.getElementById('login-id').value;
@@ -247,7 +248,7 @@
                         roleBadge.innerText = roleText; roleBadge.style.backgroundColor = roleColor;
 
                         navigate('home');
-                        startAutoSync(); // เริ่มต้นระบบซิงค์ Real-time
+                        startAutoSync(); // เริ่ม Auto Sync หลังจาก Login เสร็จ
                     });
                 } else {
                     handleLoginFail();
@@ -255,11 +256,12 @@
             } catch (error) { Swal.fire('ข้อผิดพลาด API', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error'); } finally { showLoading(false); }
         }
 
-        function handleLoginFail() { /* คูลดาวน์... */
+        function handleLoginFail() {
             loginAttempts++;
             if(loginAttempts >= 3) {
                 isCooldown = true; let timeLeft = 90;
-                document.getElementById('cooldown-timer').classList.remove('hidden'); document.getElementById('login-id').disabled = true; document.getElementById('btn-login').disabled = true;
+                document.getElementById('cooldown-timer').classList.remove('hidden'); 
+                document.getElementById('login-id').disabled = true; document.getElementById('btn-login').disabled = true;
                 Swal.fire('ระงับชั่วคราว', 'กรอกผิด 3 ครั้ง กรุณารอ 90 วินาที', 'warning');
                 const cd = setInterval(() => {
                     document.getElementById('cooldown-timer').innerText = `รอ: ${timeLeft} วิ`; timeLeft--;
@@ -268,43 +270,37 @@
             } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
-        // ================= Real-time Auto Sync (Polling) =================
+        // ================= 2. ระบบดึงข้อมูล (Optimized) =================
+        async function fetchAllData(isSilent = false) {
+            if (!isSilent) showLoading(true);
+            try {
+                const response = await fetch(`${API_URL}?action=getAllData`);
+                const result = await response.json();
+                if(result.success) {
+                    worksData = result.works;
+                    scoresData = result.scores;
+                }
+            } catch(e) { console.error("Fetch Error:", e); } finally { if (!isSilent) showLoading(false); }
+        }
+
+        // ================= Real-time Auto Sync =================
         function startAutoSync() {
             document.getElementById('sync-indicator').classList.remove('hidden');
-            
             autoSyncInterval = setInterval(async () => {
-                // หยุดซิงค์หากอยู่ในฟอร์มให้คะแนน หรือกำลังลากการ์ด เพื่อไม่ให้งานหาย
-                if (!currentUser || currentPage === 'scoring_form' || isDragging) return;
-                
+                if (!currentUser || currentPage === 'scoring_form' || isDragging) return; // ไม่กวนเวลาทำงาน
                 try {
-                    const [worksRes, scoresRes] = await Promise.all([ fetch(`${API_URL}?action=getWorks`), fetch(`${API_URL}?action=getScores`) ]);
-                    const worksResult = await worksRes.json(); const scoresResult = await scoresRes.json();
-                    if(worksResult.success) worksData = worksResult.data;
-                    if(scoresResult.success) scoresData = scoresResult.data;
-
-                    // รีเฟรชเฉพาะหน้าปัจจุบันแบบเงียบๆ (Silent Refresh)
+                    await fetchAllData(true); // โหลดเงียบๆ
                     if (currentPage === 'home') renderDashboard();
                     else if (currentPage === 'works') renderWorksList();
                     else if (currentPage === 'scoring') renderScoringList();
                     else if (currentPage === 'summary') drawSummaryTables();
                 } catch(e) { console.log("Silent Sync Failed"); }
-            }, 10000); // เช็คฐานข้อมูลทุก 10 วินาที
-        }
-
-        // ================= 2. ดึงข้อมูลครั้งแรกเมื่อเปลี่ยนหน้า =================
-        async function fetchAllData() {
-            showLoading(true);
-            try {
-                const [worksRes, scoresRes] = await Promise.all([ fetch(`${API_URL}?action=getWorks`), fetch(`${API_URL}?action=getScores`) ]);
-                const worksResult = await worksRes.json(); const scoresResult = await scoresRes.json();
-                if(worksResult.success) worksData = worksResult.data;
-                if(scoresResult.success) scoresData = scoresResult.data;
-            } catch(e) { console.error(e); } finally { showLoading(false); }
+            }, 8000); // 8 วินาที
         }
 
         // ================= 3. Navigation =================
         async function navigate(page) {
-            currentPage = page; // อัปเดตสถานะหน้าปัจจุบัน
+            currentPage = page;
             const titles = { home: "แดชบอร์ดความคืบหน้า", works: "จัดการผลงาน / ขึ้นคิว", scoring: "รอคิวให้คะแนน", summary: "สรุปผลคะแนน" };
             document.getElementById('current-menu-title').innerText = titles[page];
             
@@ -349,15 +345,13 @@
             document.getElementById('content-area').innerHTML = html;
         }
 
-        // ================= 5. หน้า Works =================
+        // ================= 5. หน้า Works (จัดคิว) =================
         function renderWorksList() {
             const contentArea = document.getElementById('content-area');
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             
-            // กรองสถานะเพื่อไม่ให้การ์ดที่กำลังพรีเซนต์มาปนในลิสต์จัดคิว
             const pendingWorks = myWorks.filter(w => w.status !== 'active');
             const activeWorks = myWorks.filter(w => w.status === 'active');
-
             const groupedPending = pendingWorks.reduce((acc, work) => {
                 if (!acc[work.category]) acc[work.category] = [];
                 acc[work.category].push(work); return acc;
@@ -404,7 +398,6 @@
                 html += `</div></div>`;
             }
 
-            // โซนดูผลงานที่กำลังพรีเซนต์
             if (activeWorks.length > 0) {
                 html += `<h3 class="font-bold text-green-600 mt-8 mb-3 px-2"><i class="fas fa-bullhorn"></i> ผลงานที่กำลังประเมิน (ขึ้นคิวแล้ว)</h3><div class="glass-panel p-3 bg-green-50">`;
                 activeWorks.forEach(work => {
@@ -424,15 +417,15 @@
             if(currentUser.role !== 'Judge') {
                 document.querySelectorAll('.works-container').forEach(container => {
                     new Sortable(container, { 
-                        handle: '.drag-handle', animation: 250, ghostClass: 'sortable-ghost', 
-                        onStart: function() { isDragging = true; }, // หยุดซิงค์ชั่วคราวตอนลาก
-                        onEnd: function (evt) { isDragging = false; updateSequenceAfterDrag(evt.to); } 
+                        handle: '.drag-handle', animation: 250, ghostClass: 'sortable-ghost',
+                        onStart: function() { isDragging = true; }, 
+                        onEnd: function(evt) { isDragging = false; updateSequenceAfterDrag(evt.to); } 
                     });
                 });
             }
         }
 
-        // ================= 5.1 Pop-up รายละเอียด & สั่งขึ้นคิว =================
+        // ================= 5.1 Pop-up & คิว =================
         function showFullDetails(workId, title, presenter, position, level, status) {
             let isJudge = currentUser && currentUser.role === 'Judge';
             let btnText = status === 'active' ? '<i class="fas fa-times-circle"></i> ยกเลิกคิว' : '<i class="fas fa-bullhorn"></i> ขึ้นคิวให้คะแนน';
@@ -461,8 +454,7 @@
             Toast.fire({ icon: 'info', title: 'กำลังอัปเดตคิว...' });
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateWorkStatus", workId: workId, status: newStatus }) });
-                const result = await response.json();
-                if(result.success) { Toast.fire({ icon: 'success', title: 'สำเร็จ' }); fetchAllData().then(renderWorksList); }
+                if((await response.json()).success) { Toast.fire({ icon: 'success', title: 'สำเร็จ' }); fetchAllData(true).then(renderWorksList); }
             } catch(e) { Toast.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด' }); }
         }
 
@@ -477,12 +469,10 @@
             fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateSequence", updates: updates }) });
         }
 
-        // ================= 6. หน้า Scoring (แสดงผลงานรอคิว) =================
+        // ================= 6. หน้า Scoring =================
         function renderScoringList() {
             const contentArea = document.getElementById('content-area');
             const activeWorks = worksData.filter(w => w.status === 'active' && w.group === currentUser.group);
-
-            // ซ่อนผลงานที่ submit แล้ว
             const worksToScore = activeWorks.filter(w => {
                 const myScore = scoresData.find(s => s.workId === w.id && s.judgeId === currentUser.id);
                 return !(myScore && myScore.status === 'submitted');
@@ -503,7 +493,6 @@
                 let cardClass = isDraft ? 'draft-neon bg-orange-50' : 'border-gray-100 bg-white';
                 let btnText = isDraft ? '<i class="fas fa-pen mb-1"></i> แก้ไข' : '<i class="fas fa-pen mb-1"></i> ประเมิน';
                 let btnColor = isDraft ? 'bg-yellow-500 text-white' : 'bg-blue-600 text-white';
-                
                 let draftScoreHtml = isDraft ? `<span class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold shadow-sm border border-orange-200 mt-2 inline-block"><i class="fas fa-save"></i> ร่าง: ${myScore.totalScore} คะแนน</span>` : '';
 
                 html += `
@@ -523,10 +512,9 @@
             document.getElementById('content-area').innerHTML = html;
         }
 
-        // ================= 6.1 ฟอร์มให้คะแนน =================
+        // ================= 6.1 ฟอร์มประเมิน =================
         function openScoringForm(workId, category, title, existingScore = null) {
-            currentPage = 'scoring_form'; // ดักไว้ไม่ให้ระบบ Auto-Sync มารีเฟรชตอนกำลังกรอก
-
+            currentPage = 'scoring_form'; 
             if(!existingScore) existingScore = scoresData.find(s => s.workId === workId && s.judgeId === currentUser.id);
             document.getElementById('current-menu-title').innerText = existingScore ? "แก้ไขคะแนน" : "แบบประเมิน";
             
@@ -677,12 +665,10 @@
                 for (let lvl in grouped[cat]) {
                     let worksInGroup = grouped[cat][lvl];
                     
-                    // หากเป็นกรรมการ ดูเฉพาะผลงานที่มีคะแนนตัวเองแบบ submitted แล้ว
                     if(currentUser.role === 'Judge') {
                         worksInGroup = worksInGroup.filter(w => scoresData.some(s => s.workId === w.id && s.judgeId === currentUser.id && s.status === 'submitted'));
                         if(worksInGroup.length === 0) continue;
                     } else {
-                        // Admin/Staff ดูเฉพาะผลงานที่มีกรรมการกด submit แล้วอย่างน้อย 1 คน
                         worksInGroup = worksInGroup.filter(w => scoresData.some(s => s.workId === w.id && s.status === 'submitted'));
                         if(worksInGroup.length === 0) continue;
                     }
@@ -767,14 +753,17 @@
                     displayHtml += `</tbody></table></div>`;
                 }
             }
-            if(displayHtml === '') displayHtml = `<div class="glass-panel p-8 text-center text-gray-500">ไม่พบข้อมูลคะแนนในหมวดหมู่ที่เลือก</div>`;
+            if(displayHtml === '') displayHtml = `<div class="glass-panel p-8 text-center text-gray-500">ไม่พบข้อมูลผลงานที่ผ่านการประเมินแล้วในหมวดหมู่ที่เลือก</div>`;
             container.innerHTML = displayHtml;
         }
 
         // ================= 9. Logout =================
         function logout() { 
             Swal.fire({ title: 'ออกจากระบบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก' }).then((result) => {
-                if (result.isConfirmed) { clearInterval(autoSyncInterval); document.getElementById('sync-indicator').classList.add('hidden'); currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = ''; }
+                if (result.isConfirmed) { 
+                    clearInterval(autoSyncInterval); document.getElementById('sync-indicator').classList.add('hidden'); 
+                    currentUser = null; document.getElementById('main-app').classList.add('hidden-page'); document.getElementById('login-section').classList.remove('hidden-page'); document.getElementById('login-id').value = ''; 
+                }
             });
         }
     </script>
