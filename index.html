@@ -99,6 +99,14 @@
         let currentPage = 'login';
         let isDragging = false; 
 
+        // ฟังก์ชันทำความสะอาดข้อความ (ป้องกันปุ่มพังจาก ' หรือ " หรือ ขึ้นบรรทัดใหม่)
+        function safeStr(str) {
+            if (!str) return '';
+            return String(str).replace(/[\r\n]+/g, " ") // เปลี่ยนขึ้นบรรทัดใหม่เป็นช่องว่าง
+                              .replace(/'/g, "\\'")     // ป้องกัน Single Quote
+                              .replace(/"/g, "&quot;"); // ป้องกัน Double Quote
+        }
+
         // ฐานข้อมูลเกณฑ์การประเมิน 10 ประเภท
         const criteriaConfig = {
             "Oral Presentation : วิจัย": [
@@ -261,7 +269,7 @@
             } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
-        // ================= 2. ดึงข้อมูล (Optimized) =================
+        // ================= 2. ดึงข้อมูล =================
         async function fetchAllData(isSilent = false) {
             if (!isSilent) showLoading(true);
             try {
@@ -297,7 +305,7 @@
             else if (page === 'summary') renderSummary();
         }
 
-        // ================= 4. หน้า Home (Dashboard) =================
+        // ================= 4. หน้า Home =================
         function renderDashboard() {
             let html = `<div class="pb-6"><div class="grid grid-cols-1 gap-4">`;
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
@@ -318,12 +326,11 @@
             html += `</div></div>`; document.getElementById('content-area').innerHTML = html;
         }
 
-        // ================= 5. หน้า Works (จัดคิว) =================
+        // ================= 5. หน้า Works =================
         function renderWorksList() {
             const contentArea = document.getElementById('content-area');
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             
-            // กรองสถานะเพื่อไม่ให้การ์ดที่กำลังพรีเซนต์มาปนในลิสต์จัดคิว
             const pendingWorks = myWorks.filter(w => w.status !== 'active');
             const activeWorks = myWorks.filter(w => w.status === 'active');
             const groupedPending = pendingWorks.reduce((acc, work) => { if (!acc[work.category]) acc[work.category] = []; acc[work.category].push(work); return acc; }, {});
@@ -343,10 +350,15 @@
                         <div class="glass-panel rounded-t-none p-3 works-container min-h-[50px]" data-category="${category}">
                 `;
                 works.forEach(work => {
-                    const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
+                    const sTitle = safeStr(work.title);
+                    const sPresenter = safeStr(work.presenter);
+                    const sPos = safeStr(work.position);
+                    const sLevel = safeStr(work.level);
+                    
                     let levelColor = work.level.includes('สะเดา') ? 'bg-blue-100 text-blue-700' : (work.level.includes('ปาดัง') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700');
+
                     html += `
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card cursor-pointer" data-id="${work.id}" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card cursor-pointer" data-id="${work.id}" onclick="showFullDetails('${work.id}', '${sTitle}', '${sPresenter}', '${sPos}', '${sLevel}', '${work.status}')">
                             <div class="drag-handle text-gray-300 hover:text-blue-500 px-1 py-2" onclick="event.stopPropagation()"><i class="fas fa-grip-vertical text-lg"></i></div>
                             <div class="flex-grow pl-1">
                                 <div class="flex justify-between items-start"><h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-1">${work.title}</h3><span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg border border-blue-100 shrink-0 ml-2">${work.sequence}</span></div>
@@ -360,10 +372,16 @@
             if (activeWorks.length > 0) {
                 html += `<h3 class="font-bold text-green-600 mt-8 mb-3 px-2"><i class="fas fa-bullhorn"></i> ผลงานที่กำลังประเมิน (ขึ้นคิวแล้ว)</h3><div class="glass-panel p-3 bg-green-50">`;
                 activeWorks.forEach(work => {
-                    const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
+                    const sTitle = safeStr(work.title);
+                    const sPresenter = safeStr(work.presenter);
+                    const sPos = safeStr(work.position);
+                    const sLevel = safeStr(work.level);
+                    
                     html += `
-                        <div class="bg-white p-3 rounded-xl shadow border-l-4 border-green-500 mb-2 cursor-pointer" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
-                            <p class="text-xs text-blue-500 font-bold mb-1">${work.category}</p><h3 class="font-bold text-gray-800 text-sm line-clamp-1">${work.title}</h3><p class="text-xs text-gray-500 mt-1">คิวที่ ${work.sequence} | ผู้แต่ง: ${work.presenter}</p>
+                        <div class="bg-white p-3 rounded-xl shadow border-l-4 border-green-500 mb-2 cursor-pointer" onclick="showFullDetails('${work.id}', '${sTitle}', '${sPresenter}', '${sPos}', '${sLevel}', '${work.status}')">
+                            <p class="text-xs text-blue-500 font-bold mb-1">${work.category}</p>
+                            <h3 class="font-bold text-gray-800 text-sm line-clamp-1">${work.title}</h3>
+                            <p class="text-xs text-gray-500 mt-1">คิวที่ ${work.sequence} | ผู้แต่ง: ${work.presenter}</p>
                         </div>`;
                 });
                 html += `</div>`;
@@ -377,6 +395,7 @@
             }
         }
 
+        // ================= 5.1 Pop-up & คิว =================
         function showFullDetails(workId, title, presenter, position, level, status) {
             let isJudge = currentUser && currentUser.role === 'Judge';
             let btnText = status === 'active' ? '<i class="fas fa-times-circle"></i> ยกเลิกคิว' : '<i class="fas fa-bullhorn"></i> ขึ้นคิวให้คะแนน';
@@ -393,7 +412,9 @@
                         <p class="text-sm text-gray-700"><i class="fas fa-hospital text-red-400 w-5"></i> ${level}</p>
                     </div>`,
                 showCancelButton: true, showConfirmButton: !isJudge, confirmButtonText: btnText, confirmButtonColor: btnColor, cancelButtonText: 'ปิดหน้าต่าง', cancelButtonColor: '#6b7280', reverseButtons: true
-            }).then((result) => { if (result.isConfirmed && !isJudge) toggleQueue(workId, status === 'active' ? 'waiting' : 'active'); });
+            }).then((result) => {
+                if (result.isConfirmed && !isJudge) toggleQueue(workId, status === 'active' ? 'waiting' : 'active');
+            });
         }
 
         async function toggleQueue(workId, newStatus) {
@@ -410,12 +431,11 @@
             fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateSequence", updates: updates }) });
         }
 
-        // ================= 6. หน้า Scoring (แสดงผลงานรอคิว) =================
+        // ================= 6. หน้า Scoring =================
         function renderScoringList() {
             const contentArea = document.getElementById('content-area');
             const activeWorks = worksData.filter(w => w.status === 'active' && w.group === currentUser.group);
 
-            // ซ่อนผลงานที่ submit แล้ว
             const worksToScore = activeWorks.filter(w => {
                 const myScore = scoresData.find(s => s.workId === w.id && s.judgeId === currentUser.id);
                 return !(myScore && myScore.status === 'submitted');
@@ -428,7 +448,11 @@
             let html = `<div class="pb-6"><h2 class="font-bold text-blue-900 mb-4 px-2"><i class="fas fa-bell text-yellow-500"></i> คิวให้คะแนนของคุณ</h2>`;
             
             worksToScore.sort((a, b) => a.sequence - b.sequence).forEach(work => {
-                const safeTitle = work.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
+                const sTitle = safeStr(work.title);
+                const sPresenter = safeStr(work.presenter);
+                const sPos = safeStr(work.position);
+                const sLevel = safeStr(work.level);
+                    
                 const myScore = scoresData.find(s => s.workId === work.id && s.judgeId === currentUser.id);
                 
                 let isDraft = myScore && myScore.status === 'draft';
@@ -439,10 +463,10 @@
 
                 html += `
                     <div class="p-4 rounded-xl shadow mb-3 flex items-center gap-3 relative overflow-hidden ${cardClass}">
-                        <button onclick="openScoringForm('${work.id}', '${work.category}', '${safeTitle}')" class="shrink-0 ${btnColor} hover:bg-opacity-80 px-2 py-3 rounded-xl transition shadow-md font-bold text-xs flex flex-col items-center justify-center w-16">
+                        <button onclick="openScoringForm('${work.id}', '${work.category}', '${sTitle}')" class="shrink-0 ${btnColor} hover:bg-opacity-80 px-2 py-3 rounded-xl transition shadow-md font-bold text-xs flex flex-col items-center justify-center w-16">
                             ${btnText}
                         </button>
-                        <div class="flex-grow pl-2 border-l-2 border-gray-200 cursor-pointer" onclick="showFullDetails('${work.id}', '${safeTitle}', '${work.presenter}', '${work.position}', '${work.level}', '${work.status}')">
+                        <div class="flex-grow pl-2 border-l-2 border-gray-200 cursor-pointer" onclick="showFullDetails('${work.id}', '${sTitle}', '${sPresenter}', '${sPos}', '${sLevel}', '${work.status}')">
                             <p class="text-xs font-bold text-blue-500 mb-1">${work.category}</p>
                             <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${work.title}</h3>
                             ${draftScoreHtml}
@@ -524,7 +548,7 @@
             } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้', 'error'); } finally { showLoading(false); }
         }
 
-        // ================= 7. ระบบสรุปผล (Summary & Print) =================
+        // ================= 7. ระบบสรุปผล =================
         function renderSummary() {
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             const categories = [...new Set(myWorks.map(w => w.category))];
@@ -570,7 +594,6 @@
             let displayHtml = '';
 
             if (currentUser.role === 'Judge') {
-                // --- 7.1 มุมมองกรรมการ: แสดงเป็นการ์ดสรุปผล ---
                 let myScoredWorks = filteredWorks.map(w => {
                     const myScore = scoresData.find(s => s.workId === w.id && s.judgeId === currentUser.id && s.status === 'submitted');
                     if (myScore) return { ...w, finalTotal: parseInt(myScore.totalScore) || 0 };
@@ -578,13 +601,10 @@
                 }).filter(w => w !== null);
 
                 if (myScoredWorks.length === 0) {
-                    container.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500"><i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i><br>ไม่พบผลงานที่คุณประเมินเสร็จสิ้นแล้ว</div>`;
-                    return;
+                    container.innerHTML = `<div class="glass-panel p-8 text-center text-gray-500"><i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i><br>ไม่พบผลงานที่คุณประเมินเสร็จสิ้นแล้ว</div>`; return;
                 }
 
-                // จัดอันดับ
                 myScoredWorks.sort((a, b) => b.finalTotal - a.finalTotal);
-
                 displayHtml += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">`;
                 myScoredWorks.forEach((w, index) => {
                     const safeTitle = w.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
@@ -612,19 +632,12 @@
                 });
                 displayHtml += `</div>`;
             } else {
-                // --- 7.2 มุมมองทีมงาน/แอดมิน: แสดงเป็นตาราง Print ---
                 const grouped = {};
-                filteredWorks.forEach(w => {
-                    if(!grouped[w.category]) grouped[w.category] = {};
-                    if(!grouped[w.category][w.level]) grouped[w.category][w.level] = [];
-                    grouped[w.category][w.level].push(w);
-                });
+                filteredWorks.forEach(w => { if(!grouped[w.category]) grouped[w.category] = {}; if(!grouped[w.category][w.level]) grouped[w.category][w.level] = []; grouped[w.category][w.level].push(w); });
 
                 for (let cat in grouped) {
                     for (let lvl in grouped[cat]) {
-                        let worksInGroup = grouped[cat][lvl];
-                        
-                        worksInGroup = worksInGroup.filter(w => scoresData.some(s => s.workId === w.id && s.status === 'submitted'));
+                        let worksInGroup = grouped[cat][lvl].filter(w => scoresData.some(s => s.workId === w.id && s.status === 'submitted'));
                         if(worksInGroup.length === 0) continue;
 
                         let judgesSet = new Set();
@@ -636,33 +649,20 @@
                             const wScores = scoresData.filter(s => s.workId === w.id && s.status === 'submitted');
                             wScores.forEach(s => { w.summaryScores[s.judgeName] = s.totalScore; w.finalTotal += s.totalScore; });
                         });
-                        
                         worksInGroup.sort((a, b) => b.finalTotal - a.finalTotal);
 
                         displayHtml += `
                             <div class="print-container glass-panel p-4 mb-6 bg-white overflow-x-auto shadow-sm">
-                                <div class="print-header hidden no-print print-only">
-                                    มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569<br><span style="font-size: 14pt; font-weight: normal;">ณ โรงพยาบาลสะเดา</span><br><span style="font-size: 12pt; font-weight: normal;">ประเภท: ${cat} | ระดับ: ${lvl}</span>
-                                </div>
-                                <div class="no-print mb-3 border-l-4 border-blue-500 pl-2">
-                                    <h3 class="font-bold text-blue-900">${cat}</h3><p class="text-sm text-gray-500">ระดับ: ${lvl}</p>
-                                </div>
+                                <div class="print-header hidden no-print print-only">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569<br><span style="font-size: 14pt; font-weight: normal;">ณ โรงพยาบาลสะเดา</span><br><span style="font-size: 12pt; font-weight: normal;">ประเภท: ${cat} | ระดับ: ${lvl}</span></div>
+                                <div class="no-print mb-3 border-l-4 border-blue-500 pl-2"><h3 class="font-bold text-blue-900">${cat}</h3><p class="text-sm text-gray-500">ระดับ: ${lvl}</p></div>
                                 <table class="print-table w-full text-sm">
-                                    <thead>
-                                        <tr class="bg-blue-50 text-blue-900">
-                                            <th class="w-12">อันดับ</th><th class="text-left">ชื่อผลงาน</th><th class="text-left w-32">ชื่อสกุลผู้นำเสนอ</th><th class="text-left w-24">ตำแหน่ง</th>
+                                    <thead><tr class="bg-blue-50 text-blue-900"><th class="w-12">อันดับ</th><th class="text-left">ชื่อผลงาน</th><th class="text-left w-32">ชื่อสกุลผู้นำเสนอ</th><th class="text-left w-24">ตำแหน่ง</th>
                         `;
-
                         judgeNames.forEach(jn => displayHtml += `<th class="w-16">${jn}</th>`);
                         displayHtml += `<th class="w-20 bg-green-50 text-green-800">คะแนนรวม</th></tr></thead><tbody>`;
 
                         worksInGroup.forEach((w, index) => {
-                            displayHtml += `
-                                <tr class="hover:bg-gray-50">
-                                    <td class="font-bold text-center">${w.finalTotal > 0 ? index + 1 : '-'}</td>
-                                    <td class="text-left"><div class="line-clamp-2">${w.title}</div></td>
-                                    <td class="text-left">${w.presenter}</td><td class="text-left">${w.position}</td>
-                            `;
+                            displayHtml += `<tr class="hover:bg-gray-50"><td class="font-bold text-center">${w.finalTotal > 0 ? index + 1 : '-'}</td><td class="text-left"><div class="line-clamp-2">${w.title}</div></td><td class="text-left">${w.presenter}</td><td class="text-left">${w.position}</td>`;
                             judgeNames.forEach(jn => { let s = w.summaryScores[jn]; displayHtml += `<td class="text-center">${s !== undefined ? s : '-'}</td>`; });
                             displayHtml += `<td class="font-bold text-center text-green-600 bg-green-50">${w.finalTotal}</td></tr>`;
                         });
