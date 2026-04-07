@@ -261,7 +261,7 @@
             } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
-        // ================= 2. ดึงข้อมูลแบบโหลดทีเดียว (Optimized) =================
+        // ================= 2. ดึงข้อมูล (Optimized) =================
         async function fetchAllData(isSilent = false) {
             if (!isSilent) showLoading(true);
             try {
@@ -277,21 +277,19 @@
                 if (!currentUser || currentPage === 'scoring_form' || isDragging) return;
                 try {
                     await fetchAllData(true);
-                    renderCurrentPage(); // รีเฟรชหน้าจอเบาๆ
+                    renderCurrentPage(); 
                 } catch(e) { console.log("Silent Sync Failed"); }
             }, 8000); 
         }
 
-        // ================= 3. Navigation (เปลี่ยนหน้าทันทีโดยไม่ต้องโหลดใหม่) =================
+        // ================= 3. Navigation =================
         async function navigate(page) {
             currentPage = page;
             const titles = { home: "แดชบอร์ดความคืบหน้า", works: "จัดการผลงาน / ขึ้นคิว", scoring: "รอคิวให้คะแนน", summary: "สรุปผลคะแนน" };
             document.getElementById('current-menu-title').innerText = titles[page];
             
-            // วาดหน้าจอทันทีจากข้อมูลในหน่วยความจำ (ทำให้สลับเมนูเร็ว 0.01 วิ)
             renderCurrentPage();
             
-            // แอบดึงข้อมูลอัปเดตเบื้องหลัง (เผื่อมีคนขึ้นคิวจังหวะที่กดพอดี)
             fetchAllData(true).then(() => {
                 if(currentPage !== 'scoring_form' && !isDragging) renderCurrentPage();
             });
@@ -344,7 +342,7 @@
                                 <input type="number" value="1" class="w-10 text-center text-blue-900 font-bold rounded outline-none p-0.5" title="ลำดับประเภท">
                                 <span class="truncate">${category}</span>
                             </div>
-                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs shrink-0">${works.length} รอคิว</span>
+                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs shrink-0">${works.length} ผลงาน</span>
                         </div>
                         <div class="glass-panel rounded-t-none p-3 works-container min-h-[50px]" data-category="${category}">
                 `;
@@ -386,7 +384,7 @@
             }
         }
 
-        // ================= 5.1 Pop-up =================
+        // ================= 5.1 Pop-up & คิว =================
         function showFullDetails(workId, title, presenter, position, level, status) {
             let isJudge = currentUser && currentUser.role === 'Judge';
             let btnText = status === 'active' ? '<i class="fas fa-times-circle"></i> ยกเลิกคิว' : '<i class="fas fa-bullhorn"></i> ขึ้นคิวให้คะแนน';
@@ -464,6 +462,7 @@
             html += `</div>`; document.getElementById('content-area').innerHTML = html;
         }
 
+        // ================= 6.1 ฟอร์มประเมิน =================
         function openScoringForm(workId, category, title, existingScore = null) {
             currentPage = 'scoring_form'; 
             if(!existingScore) existingScore = scoresData.find(s => s.workId === workId && s.judgeId === currentUser.id);
@@ -639,8 +638,12 @@
 
                         displayHtml += `
                             <div class="print-wrapper glass-panel p-4 mb-6 bg-white overflow-x-auto shadow-sm">
-                                <div class="print-header hidden no-print">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569<br><span style="font-size: 14pt; font-weight: normal;">ณ โรงพยาบาลสะเดา</span><br><span style="font-size: 12pt; font-weight: normal;">ประเภท: ${cat} | ระดับ: ${lvl}</span></div>
-                                <div class="no-print mb-3 border-l-4 border-blue-500 pl-2"><h3 class="font-bold text-blue-900">${cat}</h3><p class="text-sm text-gray-500">ระดับ: ${lvl}</p></div>
+                                <div class="print-header hidden no-print print-only">
+                                    มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569<br><span style="font-size: 14pt; font-weight: normal;">ณ โรงพยาบาลสะเดา</span><br><span style="font-size: 12pt; font-weight: normal;">ประเภท: ${cat} | ระดับ: ${lvl}</span>
+                                </div>
+                                <div class="no-print mb-3 border-l-4 border-blue-500 pl-2">
+                                    <h3 class="font-bold text-blue-900">${cat}</h3><p class="text-sm text-gray-500">ระดับ: ${lvl}</p>
+                                </div>
                                 <table class="print-table w-full text-sm">
                                     <thead><tr class="bg-blue-50 text-blue-900"><th class="w-12">อันดับ</th><th class="text-left">ชื่อผลงาน</th><th class="text-left w-32">ชื่อสกุลผู้นำเสนอ</th><th class="text-left w-24">ตำแหน่ง</th>
                         `;
@@ -653,15 +656,15 @@
                             displayHtml += `<td class="font-bold text-center text-green-600 bg-green-50">${w.finalTotal}</td></tr>`;
                         });
                         
-                        // ปิดตาราง และเพิ่มกล่องลายเซ็นสำหรับการ Print
+                        // ปิดตาราง และส่วนลายเซ็นกว้างขึ้น ไม่ตกบรรทัด
                         displayHtml += `
                                     </tbody>
                                 </table>
-                                <div class="print-signature">
-                                    <div class="text-center w-64 mr-10">
-                                        <p class="mb-10">ลงชื่อ..........................................................ผู้รับรอง</p>
-                                        <p>(..........................................................)</p>
-                                        <p class="mt-2">ตำแหน่ง..........................................................</p>
+                                <div class="print-signature mt-8 flex justify-end">
+                                    <div class="text-center w-auto pr-8">
+                                        <p class="mb-10">ลงชื่อ........................................................ผู้รับรอง</p>
+                                        <p>(........................................................)</p>
+                                        <p class="mt-2">ตำแหน่ง........................................................</p>
                                     </div>
                                 </div>
                             </div>`;
