@@ -20,20 +20,20 @@
         .draft-neon { border: 2px solid #f59e0b !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
         .active-queue { border-left: 6px solid #10b981 !important; }
         
-        /* สไตล์สำหรับการพิมพ์ (Print) */
+        /* สไตล์สำหรับการพิมพ์ (Print) แก้ไขแล้ว */
         @media print {
             @page { size: landscape; margin: 15mm; }
             body { background: white !important; font-size: 11pt; color: black; display: block; height: auto; }
             .bg-curve, .glass-panel, nav, footer, header, #login-section, .no-print { display: none !important; }
             #main-app, #content-area { display: block !important; overflow: visible !important; height: auto !important; padding: 0 !important; }
-            .print-container { display: block !important; width: 100%; page-break-after: always; }
-            .print-header { text-align: center; font-weight: bold; font-size: 16pt; margin-bottom: 20px; color: black; }
+            .print-wrapper { display: block !important; width: 100%; page-break-after: always; box-shadow: none !important; border: none !important; }
+            .print-header { display: block !important; text-align: center; font-weight: bold; font-size: 16pt; margin-bottom: 20px; color: black; }
             .print-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
             .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 11pt; color: black; }
             .print-table th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
             .text-left { text-align: left !important; }
         }
-        .print-container { display: none; }
+        .print-header { display: none; } /* ซ่อนหัวกระดาษตอนดูบนจอมือถือ */
     </style>
 </head>
 <body>
@@ -89,22 +89,13 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwe2cc7c3dfQcVRShpXuP51SFMpk42NozsUYeM8NsRI6Zwkx5h6bYh_r8K3uqglBCZ6QA/exec";
-        let loginAttempts = 0; 
-        let isCooldown = false; 
-        let currentUser = null;
-        let worksData = []; 
-        let scoresData = [];
-        
-        let autoSyncInterval;
-        let currentPage = 'login';
-        let isDragging = false; 
+        let loginAttempts = 0; let isCooldown = false; let currentUser = null;
+        let worksData = []; let scoresData = [];
+        let autoSyncInterval; let currentPage = 'login'; let isDragging = false; 
 
-        // ฟังก์ชันทำความสะอาดข้อความ (ป้องกันปุ่มพังจาก ' หรือ " หรือ ขึ้นบรรทัดใหม่)
         function safeStr(str) {
             if (!str) return '';
-            return String(str).replace(/[\r\n]+/g, " ") // เปลี่ยนขึ้นบรรทัดใหม่เป็นช่องว่าง
-                              .replace(/'/g, "\\'")     // ป้องกัน Single Quote
-                              .replace(/"/g, "&quot;"); // ป้องกัน Double Quote
+            return String(str).replace(/[\r\n]+/g, " ").replace(/'/g, "\\'").replace(/"/g, "&quot;");
         }
 
         // ฐานข้อมูลเกณฑ์การประเมิน 10 ประเภท
@@ -269,7 +260,7 @@
             } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
-        // ================= 2. ดึงข้อมูล =================
+        // ================= 2. ดึงข้อมูล (Optimized) =================
         async function fetchAllData(isSilent = false) {
             if (!isSilent) showLoading(true);
             try {
@@ -305,7 +296,7 @@
             else if (page === 'summary') renderSummary();
         }
 
-        // ================= 4. หน้า Home =================
+        // ================= 4. หน้า Home (Dashboard) =================
         function renderDashboard() {
             let html = `<div class="pb-6"><div class="grid grid-cols-1 gap-4">`;
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
@@ -548,7 +539,7 @@
             } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้', 'error'); } finally { showLoading(false); }
         }
 
-        // ================= 7. ระบบสรุปผล =================
+        // ================= 7. ระบบสรุปผล (แก้ CSS ให้โชว์จอแล้ว) =================
         function renderSummary() {
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             const categories = [...new Set(myWorks.map(w => w.category))];
@@ -607,10 +598,10 @@
                 myScoredWorks.sort((a, b) => b.finalTotal - a.finalTotal);
                 displayHtml += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">`;
                 myScoredWorks.forEach((w, index) => {
-                    const safeTitle = w.title.replace(/[\r\n]+/g, " ").replace(/'/g, "\\'");
+                    const sTitle = safeStr(w.title); const sPresenter = safeStr(w.presenter); const sPos = safeStr(w.position); const sLevel = safeStr(w.level);
                     displayHtml += `
                         <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 flex items-center justify-between gap-3 relative overflow-hidden transition hover:shadow-md">
-                            <div class="flex-grow cursor-pointer pr-2" onclick="showFullDetails('${w.id}', '${safeTitle}', '${w.presenter}', '${w.position}', '${w.level}', '${w.status}')">
+                            <div class="flex-grow cursor-pointer pr-2" onclick="showFullDetails('${w.id}', '${sTitle}', '${sPresenter}', '${sPos}', '${sLevel}', '${w.status}')">
                                 <div class="flex justify-between items-start mb-1">
                                     <p class="text-xs font-bold text-blue-500 line-clamp-1">${w.category}</p>
                                     <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">อันดับ ${index + 1}</span>
@@ -623,7 +614,7 @@
                                     <p class="text-[10px] text-gray-400 font-semibold">คะแนนรวม</p>
                                     <p class="text-2xl font-bold text-green-600 leading-none">${w.finalTotal}</p>
                                 </div>
-                                <button onclick="openScoringForm('${w.id}', '${w.category}', '${safeTitle}')" class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1">
+                                <button onclick="openScoringForm('${w.id}', '${w.category}', '${sTitle}')" class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1">
                                     <i class="fas fa-edit"></i> แก้ไข
                                 </button>
                             </div>
@@ -652,9 +643,13 @@
                         worksInGroup.sort((a, b) => b.finalTotal - a.finalTotal);
 
                         displayHtml += `
-                            <div class="print-container glass-panel p-4 mb-6 bg-white overflow-x-auto shadow-sm">
-                                <div class="print-header hidden no-print print-only">มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569<br><span style="font-size: 14pt; font-weight: normal;">ณ โรงพยาบาลสะเดา</span><br><span style="font-size: 12pt; font-weight: normal;">ประเภท: ${cat} | ระดับ: ${lvl}</span></div>
-                                <div class="no-print mb-3 border-l-4 border-blue-500 pl-2"><h3 class="font-bold text-blue-900">${cat}</h3><p class="text-sm text-gray-500">ระดับ: ${lvl}</p></div>
+                            <div class="print-wrapper glass-panel p-4 mb-6 bg-white overflow-x-auto shadow-sm">
+                                <div class="print-header hidden no-print">
+                                    มหกรรมวิชาการสาธารณสุข อำเภอสะเดา ปี 2569<br><span style="font-size: 14pt; font-weight: normal;">ณ โรงพยาบาลสะเดา</span><br><span style="font-size: 12pt; font-weight: normal;">ประเภท: ${cat} | ระดับ: ${lvl}</span>
+                                </div>
+                                <div class="no-print mb-3 border-l-4 border-blue-500 pl-2">
+                                    <h3 class="font-bold text-blue-900">${cat}</h3><p class="text-sm text-gray-500">ระดับ: ${lvl}</p>
+                                </div>
                                 <table class="print-table w-full text-sm">
                                     <thead><tr class="bg-blue-50 text-blue-900"><th class="w-12">อันดับ</th><th class="text-left">ชื่อผลงาน</th><th class="text-left w-32">ชื่อสกุลผู้นำเสนอ</th><th class="text-left w-24">ตำแหน่ง</th>
                         `;
