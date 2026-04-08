@@ -94,9 +94,16 @@
         let worksData = []; let scoresData = [];
         let autoSyncInterval; let currentPage = 'login'; let isDragging = false; 
 
-        function safeStr(str) {
+        // ฟังก์ชันแปลง \n ให้เป็น <br> เพื่อแสดงผลหลายบรรทัดใน HTML
+        function nl2br(str) {
             if (!str) return '';
-            return String(str).replace(/[\r\n]+/g, " ").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            return String(str).replace(/[\r\n]+/g, '<br>');
+        }
+
+        // ฟังก์ชันล้าง \n ให้เป็นช่องว่าง (สำหรับส่วนที่ต้องการโชว์แค่บรรทัดเดียว เช่นในการ์ดหน้าแรก)
+        function cleanStr(str) {
+            if (!str) return '';
+            return String(str).replace(/[\r\n]+/g, ' ');
         }
 
         // ฐานข้อมูลเกณฑ์การประเมิน 10 ประเภท
@@ -238,7 +245,6 @@
                         document.getElementById('login-section').classList.add('hidden-page');
                         document.getElementById('main-app').classList.remove('hidden-page');
                         document.getElementById('user-name').innerText = currentUser.name;
-                        // ใส่ title เต็มเผื่อเอาเมาส์ชี้ดูชื่อเต็ม
                         document.getElementById('user-name').title = currentUser.name; 
                         
                         const roleBadge = document.getElementById('user-role');
@@ -264,7 +270,7 @@
             } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
-        // ================= 2. ดึงข้อมูลแบบโหลดทีเดียว (Optimized) =================
+        // ================= 2. ดึงข้อมูล =================
         async function fetchAllData(isSilent = false) {
             if (!isSilent) showLoading(true);
             try {
@@ -305,7 +311,7 @@
             else if (currentPage === 'summary') renderSummary();
         }
 
-        // ================= 4. หน้า Home (Dashboard) =================
+        // ================= 4. หน้า Home =================
         function renderDashboard() {
             let html = `<div class="pb-6"><div class="grid grid-cols-1 gap-4">`;
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
@@ -345,7 +351,7 @@
                                 <input type="number" value="1" class="w-10 text-center text-blue-900 font-bold rounded outline-none p-0.5" title="ลำดับประเภท">
                                 <span class="truncate">${category}</span>
                             </div>
-                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs shrink-0">${works.length} รอคิว</span>
+                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs shrink-0">${works.length} ผลงาน</span>
                         </div>
                         <div class="glass-panel rounded-t-none p-3 works-container min-h-[50px]" data-category="${category}">
                 `;
@@ -355,8 +361,8 @@
                         <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 flex items-center gap-2 work-card cursor-pointer" data-id="${work.id}" onclick="showFullDetails('${work.id}')">
                             <div class="drag-handle text-gray-300 hover:text-blue-500 px-1 py-2" onclick="event.stopPropagation()"><i class="fas fa-grip-vertical text-lg"></i></div>
                             <div class="flex-grow pl-1">
-                                <div class="flex justify-between items-start"><h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-1">${work.title}</h3><span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg border border-blue-100 shrink-0 ml-2">${work.sequence}</span></div>
-                                <div class="flex items-center gap-2 mt-2"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${levelColor}">${work.level}</span><p class="text-xs text-gray-500 line-clamp-1"><i class="fas fa-user-circle"></i> ${work.presenter}</p></div>
+                                <div class="flex justify-between items-start"><h3 class="font-bold text-blue-900 text-sm line-clamp-2 pr-1">${cleanStr(work.title)}</h3><span class="seq-badge font-bold text-sm text-blue-600 bg-blue-50 w-7 h-7 flex items-center justify-center rounded-lg border border-blue-100 shrink-0 ml-2">${work.sequence}</span></div>
+                                <div class="flex items-center gap-2 mt-2"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${levelColor}">${work.level}</span><p class="text-xs text-gray-500 line-clamp-1"><i class="fas fa-user-circle"></i> ${cleanStr(work.presenter)}</p></div>
                             </div>
                         </div>`;
                 });
@@ -369,8 +375,8 @@
                     html += `
                         <div class="bg-white p-3 rounded-xl shadow border-l-4 border-green-500 mb-2 cursor-pointer" onclick="showFullDetails('${work.id}')">
                             <p class="text-xs text-blue-500 font-bold mb-1">${work.category}</p>
-                            <h3 class="font-bold text-gray-800 text-sm line-clamp-1">${work.title}</h3>
-                            <p class="text-xs text-gray-500 mt-1">คิวที่ ${work.sequence} | ผู้แต่ง: ${work.presenter}</p>
+                            <h3 class="font-bold text-gray-800 text-sm line-clamp-1">${cleanStr(work.title)}</h3>
+                            <p class="text-xs text-gray-500 mt-1">คิวที่ ${work.sequence} | ผู้แต่ง: ${cleanStr(work.presenter)}</p>
                         </div>`;
                 });
                 html += `</div>`;
@@ -398,10 +404,10 @@
                 html: `
                     <div class="text-left mt-2 p-4 bg-blue-50 rounded-xl border border-blue-100">
                         <p class="font-bold text-gray-800 mb-2">เรื่อง:</p>
-                        <p class="text-blue-700 text-sm mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">${work.title}</p>
-                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-user text-blue-400 w-5"></i> ${work.presenter}</p>
-                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-briefcase text-blue-400 w-5"></i> ${work.position}</p>
-                        <p class="text-sm text-gray-700"><i class="fas fa-hospital text-red-400 w-5"></i> ${work.level}</p>
+                        <p class="text-blue-700 text-sm mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">${nl2br(work.title)}</p>
+                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-user text-blue-400 w-5"></i> ${nl2br(work.presenter)}</p>
+                        <p class="text-sm text-gray-700 mb-1"><i class="fas fa-briefcase text-blue-400 w-5"></i> ${nl2br(work.position)}</p>
+                        <p class="text-sm text-gray-700"><i class="fas fa-hospital text-red-400 w-5"></i> ${cleanStr(work.level)}</p>
                     </div>`,
                 showCancelButton: true, showConfirmButton: !isJudge, confirmButtonText: btnText, confirmButtonColor: btnColor, cancelButtonText: 'ปิดหน้าต่าง', cancelButtonColor: '#6b7280', reverseButtons: true
             }).then((result) => {
@@ -455,7 +461,7 @@
                         </button>
                         <div class="flex-grow pl-2 border-l-2 border-gray-200 cursor-pointer" onclick="showFullDetails('${work.id}')">
                             <p class="text-xs font-bold text-blue-500 mb-1">${work.category}</p>
-                            <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${work.title}</h3>
+                            <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${cleanStr(work.title)}</h3>
                             ${draftScoreHtml}
                         </div>
                     </div>
@@ -476,7 +482,7 @@
             const criteria = criteriaConfig[work.category];
             if(!criteria) return;
             
-            let html = `<div class="glass-panel p-4 md:p-6 pb-40"><div class="border-b-2 border-blue-200 pb-3 mb-4"><h2 class="text-lg md:text-xl font-bold text-blue-900 leading-tight">${work.title}</h2><p class="text-xs font-semibold text-white bg-blue-600 inline-block px-3 py-1 rounded-full mt-2">${work.category}</p></div><form id="score-form" onsubmit="confirmSubmit(event, '${workId}')">`;
+            let html = `<div class="glass-panel p-4 md:p-6 pb-40"><div class="border-b-2 border-blue-200 pb-3 mb-4"><h2 class="text-lg md:text-xl font-bold text-blue-900 leading-tight">${nl2br(work.title)}</h2><p class="text-xs font-semibold text-white bg-blue-600 inline-block px-3 py-1 rounded-full mt-2">${work.category}</p></div><form id="score-form" onsubmit="confirmSubmit(event, '${workId}')">`;
 
             criteria.forEach(sec => {
                 html += `<div class="bg-blue-50 p-3 md:p-4 rounded-xl mb-4 border border-blue-100"><h3 class="font-bold text-blue-800 mb-4 text-sm md:text-base border-l-4 border-blue-500 pl-2">${sec.section}</h3>`;
@@ -540,7 +546,7 @@
             } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้', 'error'); } finally { showLoading(false); }
         }
 
-        // ================= 7. ระบบสรุปผล (Summary) & พิมพ์รายงาน =================
+        // ================= 7. ระบบสรุปผล =================
         function renderSummary() {
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             const categories = [...new Set(myWorks.map(w => w.category))];
@@ -606,7 +612,7 @@
                                     <p class="text-xs font-bold text-blue-500 line-clamp-1">${w.category}</p>
                                     <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">อันดับ ${index + 1}</span>
                                 </div>
-                                <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${w.title}</h3>
+                                <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">${cleanStr(w.title)}</h3>
                                 <p class="text-xs text-gray-500 mt-2"><i class="fas fa-hospital text-red-300"></i> ${w.level}</p>
                             </div>
                             <div class="shrink-0 flex flex-col items-center gap-2 border-l border-gray-100 pl-3">
@@ -658,7 +664,6 @@
                                     <thead><tr class="bg-blue-50 text-blue-900"><th class="w-12">อันดับ</th><th class="text-left">ชื่อผลงาน</th><th class="text-left w-32">ชื่อสกุลผู้นำเสนอ</th><th class="text-left w-24">ตำแหน่ง</th>
                         `;
                         
-                        // ตัดนามสกุลทิ้งเฉพาะในหัวตาราง Print เพื่อประหยัดพื้นที่
                         judgeNames.forEach(jn => {
                             const shortName = jn.split(' ')[0]; 
                             displayHtml += `<th class="w-16 text-[10px] md:text-xs leading-tight whitespace-normal break-words">${shortName}</th>`;
@@ -668,10 +673,11 @@
 
                         worksInGroup.forEach((w, index) => {
                             let avgFormatted = w.scoreCount > 0 ? w.avgScore.toFixed(2) : '-';
-                            displayHtml += `<tr class="hover:bg-gray-50"><td class="font-bold text-center">${w.finalTotal > 0 ? index + 1 : '-'}</td><td class="text-left"><div class="line-clamp-2">${w.title}</div></td><td class="text-left">${w.presenter}</td><td class="text-left">${w.position}</td>`;
-                            judgeNames.forEach(jn => { let s = w.summaryScores[jn]; displayHtml += `<td class="text-center">${s !== undefined ? s : '-'}</td>`; });
+                            // ใส่ nl2br และ align-top ให้แสดงผลหลายบรรทัดตรงกัน
+                            displayHtml += `<tr class="hover:bg-gray-50"><td class="font-bold text-center align-top">${w.finalTotal > 0 ? index + 1 : '-'}</td><td class="text-left align-top"><div class="line-clamp-2">${nl2br(w.title)}</div></td><td class="text-left align-top leading-relaxed">${nl2br(w.presenter)}</td><td class="text-left align-top leading-relaxed">${nl2br(w.position)}</td>`;
+                            judgeNames.forEach(jn => { let s = w.summaryScores[jn]; displayHtml += `<td class="text-center align-top">${s !== undefined ? s : '-'}</td>`; });
                             
-                            displayHtml += `<td class="font-bold text-center text-green-600 bg-green-50">${w.finalTotal}</td><td class="font-bold text-center text-blue-600 bg-blue-50">${avgFormatted}</td></tr>`;
+                            displayHtml += `<td class="font-bold text-center align-top text-green-600 bg-green-50">${w.finalTotal}</td><td class="font-bold text-center align-top text-blue-600 bg-blue-50">${avgFormatted}</td></tr>`;
                         });
                         
                         displayHtml += `
