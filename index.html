@@ -27,14 +27,11 @@
             .bg-curve, .glass-panel, nav, footer, header, #login-section, .no-print { display: none !important; }
             #main-app, #content-area { display: block !important; overflow: visible !important; height: auto !important; padding: 0 !important; }
             .print-wrapper { display: block !important; width: 100%; page-break-after: always; box-shadow: none !important; border: none !important; }
-            .print-header { display: block !important; text-align: center; font-weight: bold; font-size: 16pt; margin-bottom: 20px; color: black; }
             .print-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
             .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 11pt; color: black; }
             .print-table th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
             .text-left { text-align: left !important; }
-            .print-signature { display: flex !important; justify-content: flex-end; margin-top: 40px; page-break-inside: avoid; color: black; }
         }
-        .print-header, .print-signature { display: none; } 
     </style>
 </head>
 <body>
@@ -91,19 +88,22 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwe2cc7c3dfQcVRShpXuP51SFMpk42NozsUYeM8NsRI6Zwkx5h6bYh_r8K3uqglBCZ6QA/exec";
         let loginAttempts = 0; let isCooldown = false; let currentUser = null;
-        let worksData = []; let scoresData = [];
+        let worksData = []; let scoresData = []; let globalSettings = {}; 
         let autoSyncInterval; let currentPage = 'login'; let isDragging = false; 
+        
+        let currentDataHash = "";
+        let filterState = { category: 'all', level: 'all' };
 
-        // ฟังก์ชันแปลง \n ให้เป็น <br> เพื่อแสดงผลหลายบรรทัดใน HTML
-        function nl2br(str) {
-            if (!str) return '';
-            return String(str).replace(/[\r\n]+/g, '<br>');
-        }
+        function nl2br(str) { if (!str) return ''; return String(str).replace(/[\r\n]+/g, '<br>'); }
+        function cleanStr(str) { if (!str) return ''; return String(str).replace(/[\r\n]+/g, ' '); }
+        function safeStr(str) { if (!str) return ''; return String(str).replace(/[\r\n]+/g, " ").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
-        // ฟังก์ชันล้าง \n ให้เป็นช่องว่าง (สำหรับส่วนที่ต้องการโชว์แค่บรรทัดเดียว เช่นในการ์ดหน้าแรก)
-        function cleanStr(str) {
-            if (!str) return '';
-            return String(str).replace(/[\r\n]+/g, ' ');
+        function getCategoryOrder(group, currentCategories) {
+            let savedOrder = [];
+            try { if (globalSettings['catOrder_' + group]) { savedOrder = JSON.parse(globalSettings['catOrder_' + group]); } } catch(e) {}
+            let finalOrder = savedOrder.filter(c => currentCategories.includes(c));
+            currentCategories.forEach(c => { if (!finalOrder.includes(c)) finalOrder.push(c); });
+            return finalOrder;
         }
 
         // ฐานข้อมูลเกณฑ์การประเมิน 10 ประเภท
@@ -270,14 +270,23 @@
             } else Swal.fire('รหัสไม่ถูกต้อง!', `เหลือโอกาสอีก ${3 - loginAttempts} ครั้ง`, 'error');
         }
 
-        // ================= 2. ดึงข้อมูล =================
+        // ================= 2. ดึงข้อมูล (Smart Sync - โหลดเมื่อมีค่าใหม่เท่านั้น) =================
         async function fetchAllData(isSilent = false) {
             if (!isSilent) showLoading(true);
             try {
                 const response = await fetch(`${API_URL}?action=getAllData`);
                 const result = await response.json();
-                if(result.success) { worksData = result.works; scoresData = result.scores; }
-            } catch(e) { console.error("Fetch Error:", e); } finally { if (!isSilent) showLoading(false); }
+                if(result.success) { 
+                    const newDataHash = JSON.stringify(result.works) + JSON.stringify(result.scores) + JSON.stringify(result.settings);
+                    if (isSilent && newDataHash === currentDataHash) return false; 
+                    
+                    currentDataHash = newDataHash;
+                    worksData = result.works; 
+                    scoresData = result.scores; 
+                    globalSettings = result.settings || {}; 
+                    return true; 
+                }
+            } catch(e) { console.error("Fetch Error:", e); return false; } finally { if (!isSilent) showLoading(false); }
         }
 
         function startAutoSync() {
@@ -285,9 +294,9 @@
             autoSyncInterval = setInterval(async () => {
                 if (!currentUser || currentPage === 'scoring_form' || isDragging) return;
                 try {
-                    await fetchAllData(true);
-                    renderCurrentPage(); 
-                } catch(e) { console.log("Silent Sync Failed"); }
+                    let hasChanged = await fetchAllData(true);
+                    if (hasChanged) renderCurrentPage(); 
+                } catch(e) {}
             }, 8000); 
         }
 
@@ -297,10 +306,10 @@
             const titles = { home: "แดชบอร์ดความคืบหน้า", works: "จัดการผลงาน / ขึ้นคิว", scoring: "รอคิวให้คะแนน", summary: "สรุปผลคะแนน" };
             document.getElementById('current-menu-title').innerText = titles[page];
             
-            renderCurrentPage();
+            renderCurrentPage(); 
             
-            fetchAllData(true).then(() => {
-                if(currentPage !== 'scoring_form' && !isDragging) renderCurrentPage();
+            fetchAllData(true).then((hasChanged) => {
+                if(hasChanged && currentPage !== 'scoring_form' && !isDragging) renderCurrentPage();
             });
         }
 
@@ -341,17 +350,27 @@
             const activeWorks = myWorks.filter(w => w.status === 'active');
             const groupedPending = pendingWorks.reduce((acc, work) => { if (!acc[work.category]) acc[work.category] = []; acc[work.category].push(work); return acc; }, {});
 
+            let currentCategories = Object.keys(groupedPending);
+            let finalOrder = getCategoryOrder(currentUser.group, currentCategories);
+
             let html = `<div class="pb-6">`; 
-            for (const [category, works] of Object.entries(groupedPending)) {
+            
+            finalOrder.forEach((category, index) => {
+                if(!groupedPending[category]) return;
+                const works = groupedPending[category];
                 works.sort((a, b) => a.sequence - b.sequence);
+                
                 html += `
                     <div class="mb-6">
                         <div class="bg-blue-900 text-white px-4 py-2 rounded-t-xl font-bold flex justify-between items-center shadow-md">
-                            <div class="flex items-center gap-2 w-3/4">
-                                <input type="number" value="1" class="w-10 text-center text-blue-900 font-bold rounded outline-none p-0.5" title="ลำดับประเภท">
-                                <span class="truncate">${category}</span>
+                            <span class="truncate pr-2">${category}</span>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs">${works.length} ผลงาน</span>
+                                ${currentUser.role !== 'Judge' ? `
+                                <button onclick="openCategoryMenu('${category}', ${index}, ${finalOrder.length})" class="hover:text-gray-300 transition px-1" title="จัดการลำดับหมวดหมู่">
+                                    <i class="fas fa-ellipsis-v text-lg"></i>
+                                </button>` : ''}
                             </div>
-                            <span class="bg-white text-blue-900 px-2 py-0.5 rounded-full text-xs shrink-0">${works.length} ผลงาน</span>
                         </div>
                         <div class="glass-panel rounded-t-none p-3 works-container min-h-[50px]" data-category="${category}">
                 `;
@@ -367,7 +386,7 @@
                         </div>`;
                 });
                 html += `</div></div>`;
-            }
+            });
 
             if (activeWorks.length > 0) {
                 html += `<h3 class="font-bold text-green-600 mt-8 mb-3 px-2"><i class="fas fa-bullhorn"></i> ผลงานที่กำลังประเมิน (ขึ้นคิวแล้ว)</h3><div class="glass-panel p-3 bg-green-50">`;
@@ -388,6 +407,38 @@
                     new Sortable(container, { handle: '.drag-handle', animation: 250, ghostClass: 'sortable-ghost', onStart: function() { isDragging = true; }, onEnd: function (evt) { isDragging = false; updateSequenceAfterDrag(evt.to); } });
                 });
             }
+        }
+
+        function openCategoryMenu(category, index, total) {
+            let html = `<div class="flex flex-col gap-2 mt-2">`;
+            if (index > 0) {
+                html += `<button onclick="moveCategory('${category}', 'top')" class="p-3 bg-gray-50 hover:bg-blue-100 text-blue-800 rounded-lg text-left w-full font-bold transition flex items-center gap-3"><i class="fas fa-angle-double-up text-xl text-blue-500 w-6"></i> ย้ายไปคิวแรกสุด</button>`;
+                html += `<button onclick="moveCategory('${category}', 'up')" class="p-3 bg-gray-50 hover:bg-blue-100 text-blue-800 rounded-lg text-left w-full font-bold transition flex items-center gap-3"><i class="fas fa-angle-up text-xl text-blue-500 w-6"></i> เลื่อนขึ้น 1 ลำดับ</button>`;
+            }
+            if (index < total - 1) {
+                html += `<button onclick="moveCategory('${category}', 'down')" class="p-3 bg-gray-50 hover:bg-blue-100 text-blue-800 rounded-lg text-left w-full font-bold transition flex items-center gap-3"><i class="fas fa-angle-down text-xl text-blue-500 w-6"></i> เลื่อนลง 1 ลำดับ</button>`;
+            }
+            if (index === 0 && total === 1) html += `<p class="text-gray-500 text-sm">มีหมวดหมู่เดียว ไม่สามารถเลื่อนได้</p>`;
+            html += `</div>`;
+            Swal.fire({ title: '<span class="text-blue-900 text-lg">จัดการลำดับหมวดหมู่</span>', html: html, showConfirmButton: false, showCloseButton: true });
+        }
+
+        function moveCategory(category, direction) {
+            const pendingWorks = worksData.filter(w => w.group === currentUser.group && w.status !== 'active');
+            const groupedPending = pendingWorks.reduce((acc, work) => { if (!acc[work.category]) acc[work.category] = []; acc[work.category].push(work); return acc; }, {});
+            let currentCategories = Object.keys(groupedPending);
+            let order = getCategoryOrder(currentUser.group, currentCategories);
+            
+            let idx = order.indexOf(category);
+            if (idx === -1) return;
+
+            if (direction === 'top' && idx > 0) { order.splice(idx, 1); order.unshift(category); } 
+            else if (direction === 'up' && idx > 0) { let temp = order[idx - 1]; order[idx - 1] = order[idx]; order[idx] = temp; } 
+            else if (direction === 'down' && idx < order.length - 1) { let temp = order[idx + 1]; order[idx + 1] = order[idx]; order[idx] = temp; }
+
+            globalSettings['catOrder_' + currentUser.group] = JSON.stringify(order);
+            Swal.close(); renderWorksList();
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateCategoryOrder", group: currentUser.group, order: order }) }).then(()=> currentDataHash="");
         }
 
         // ================= 5.1 Pop-up & คิว =================
@@ -419,14 +470,14 @@
             const Toast = Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 1500 }); Toast.fire({ icon: 'info', title: 'กำลังอัปเดตคิว...' });
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateWorkStatus", workId: workId, status: newStatus }) });
-                if((await response.json()).success) { Toast.fire({ icon: 'success', title: 'สำเร็จ' }); fetchAllData(true).then(renderWorksList); }
+                if((await response.json()).success) { currentDataHash=""; Toast.fire({ icon: 'success', title: 'สำเร็จ' }); fetchAllData(true).then(renderWorksList); }
             } catch(e) { Toast.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด' }); }
         }
 
         async function updateSequenceAfterDrag(containerEl) {
             const cards = containerEl.querySelectorAll('.work-card'); const updates = [];
             cards.forEach((card, index) => { const newSeq = index + 1; card.querySelector('.seq-badge').innerText = newSeq; updates.push({ id: card.dataset.id, seq: newSeq }); });
-            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateSequence", updates: updates }) });
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "updateSequence", updates: updates }) }).then(()=> currentDataHash="");
         }
 
         // ================= 6. หน้า Scoring =================
@@ -470,7 +521,6 @@
             html += `</div>`; document.getElementById('content-area').innerHTML = html;
         }
 
-        // ================= 6.1 ฟอร์มประเมิน =================
         function openScoringForm(workId) {
             const work = worksData.find(w => w.id === workId);
             if(!work) return;
@@ -540,13 +590,14 @@
                 const payload = { action: "submitScore", workId: workId, judgeId: currentUser.id, judgeName: currentUser.name, category: work.category, scores: scoreData, deduct: deduct, totalScore: total, status: status };
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 if((await response.json()).success) { 
+                    currentDataHash = ""; 
                     Swal.fire('สำเร็จ', status === 'draft' ? 'บันทึกฉบับร่างแล้ว' : 'ส่งคะแนนเรียบร้อย', 'success'); 
                     navigate(status === 'submitted' ? 'summary' : 'scoring'); 
                 }
             } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้', 'error'); } finally { showLoading(false); }
         }
 
-        // ================= 7. ระบบสรุปผล =================
+        // ================= 7. ระบบสรุปผล (Summary) =================
         function renderSummary() {
             const myWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
             const categories = [...new Set(myWorks.map(w => w.category))];
@@ -556,16 +607,16 @@
                 <div class="glass-panel p-4 mb-4 no-print flex flex-col md:flex-row gap-3 items-end shadow-sm">
                     <div class="w-full md:w-auto flex-grow">
                         <label class="text-xs font-bold text-blue-800 mb-1 block">ประเภทผลงาน</label>
-                        <select id="filter-category" class="w-full p-2 rounded-lg border border-gray-300 outline-none text-sm" onchange="drawSummaryTables()">
+                        <select id="filter-category" class="w-full p-2 rounded-lg border border-gray-300 outline-none text-sm" onchange="updateFilterState()">
                             <option value="all">แสดงทั้งหมด</option>
-                            ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
+                            ${categories.map(c => `<option value="${c}" ${filterState.category === c ? 'selected' : ''}>${c}</option>`).join('')}
                         </select>
                     </div>
                     <div class="w-full md:w-auto flex-grow">
                         <label class="text-xs font-bold text-blue-800 mb-1 block">ระดับ</label>
-                        <select id="filter-level" class="w-full p-2 rounded-lg border border-gray-300 outline-none text-sm" onchange="drawSummaryTables()">
+                        <select id="filter-level" class="w-full p-2 rounded-lg border border-gray-300 outline-none text-sm" onchange="updateFilterState()">
                             <option value="all">แสดงทั้งหมด</option>
-                            ${levels.map(l => `<option value="${l}">${l}</option>`).join('')}
+                            ${levels.map(l => `<option value="${l}" ${filterState.level === l ? 'selected' : ''}>${l}</option>`).join('')}
                         </select>
                     </div>
                     ${currentUser.role !== 'Judge' ? `
@@ -579,15 +630,20 @@
             drawSummaryTables();
         }
 
+        function updateFilterState() {
+            filterState.category = document.getElementById('filter-category').value;
+            filterState.level = document.getElementById('filter-level').value;
+            drawSummaryTables();
+        }
+
         function drawSummaryTables() {
-            const catFilter = document.getElementById('filter-category').value;
-            const levelFilter = document.getElementById('filter-level').value;
             const container = document.getElementById('summary-tables-container');
+            if (!container) return; 
             container.innerHTML = '';
 
             let filteredWorks = currentUser.role === 'Admin' ? worksData : worksData.filter(w => w.group === currentUser.group);
-            if(catFilter !== 'all') filteredWorks = filteredWorks.filter(w => w.category === catFilter);
-            if(levelFilter !== 'all') filteredWorks = filteredWorks.filter(w => w.level === levelFilter);
+            if(filterState.category !== 'all') filteredWorks = filteredWorks.filter(w => w.category === filterState.category);
+            if(filterState.level !== 'all') filteredWorks = filteredWorks.filter(w => w.level === filterState.level);
 
             let displayHtml = '';
 
@@ -632,7 +688,11 @@
                 const grouped = {};
                 filteredWorks.forEach(w => { if(!grouped[w.category]) grouped[w.category] = {}; if(!grouped[w.category][w.level]) grouped[w.category][w.level] = []; grouped[w.category][w.level].push(w); });
 
-                for (let cat in grouped) {
+                let currentCategories = Object.keys(grouped);
+                let finalOrder = getCategoryOrder(currentUser.group, currentCategories);
+
+                for (let cat of finalOrder) {
+                    if (!grouped[cat]) continue;
                     for (let lvl in grouped[cat]) {
                         let worksInGroup = grouped[cat][lvl].filter(w => scoresData.some(s => s.workId === w.id && s.status === 'submitted'));
                         if(worksInGroup.length === 0) continue;
@@ -673,7 +733,6 @@
 
                         worksInGroup.forEach((w, index) => {
                             let avgFormatted = w.scoreCount > 0 ? w.avgScore.toFixed(2) : '-';
-                            // ใส่ nl2br และ align-top ให้แสดงผลหลายบรรทัดตรงกัน
                             displayHtml += `<tr class="hover:bg-gray-50"><td class="font-bold text-center align-top">${w.finalTotal > 0 ? index + 1 : '-'}</td><td class="text-left align-top"><div class="line-clamp-2">${nl2br(w.title)}</div></td><td class="text-left align-top leading-relaxed">${nl2br(w.presenter)}</td><td class="text-left align-top leading-relaxed">${nl2br(w.position)}</td>`;
                             judgeNames.forEach(jn => { let s = w.summaryScores[jn]; displayHtml += `<td class="text-center align-top">${s !== undefined ? s : '-'}</td>`; });
                             
